@@ -3,9 +3,12 @@ import helmet from "helmet";
 import cors from "cors";
 import env from "./config/env.js";
 import prisma from "./lib/prisma.js";
+import requestLogger from "./middlewares/requestLogger.js";
+import { notFound, errorHandler } from "./middlewares/errorHandler.js";
 
 const app = express();
 
+app.use(requestLogger);
 app.use(helmet());
 app.use(cors({ origin: env.CLIENT_ORIGIN, credentials: true }));
 app.use(express.json({ limit: "100kb" }));
@@ -23,14 +26,7 @@ app.get("/ready", async (req, res) => {
   }
 });
 
-app.use((req, res) => {
-  res.status(404).json({ error: { code: "NOT_FOUND", message: "Route not found" } });
-});
-
-// eslint-disable-next-line no-unused-vars -- Express identifies error handlers by arity
-app.use((err, req, res, next) => {
-  console.error(err);
-  res.status(500).json({ error: { code: "INTERNAL", message: "Something went wrong" } });
-});
+app.use(notFound);
+app.use(errorHandler);
 
 export default app;
