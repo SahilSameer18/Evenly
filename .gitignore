@@ -1,0 +1,11 @@
+node_modules
+dist
+coverage
+.env
+*.local
+.DS_Store
+
+# AI-assistant tooling (local only; reinstall from server/skills-lock.json)
+.claude/
+.agents/
+.windsurf/
