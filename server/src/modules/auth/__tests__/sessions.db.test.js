@@ -7,7 +7,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)("sessions against the test datab
   let app, testDb, resetDb;
   const creds = { email: "asha@example.com", password: "correct-horse-1" };
   const valueOf = (res) => res.headers["set-cookie"].find((c) => c.startsWith("refresh_token=")).split(";")[0].split("=")[1];
-  const refresh = (token) => request(app).post("/api/v1/auth/refresh").set("Cookie", `refresh_token=${token}`);
+  const refresh = (token) => request(app).post("/api/v1/auth/refresh").set("X-Evenly-Client", "web").set("Cookie", `refresh_token=${token}`);
 
   beforeAll(async () => {
     ({ default: app } = await import("../../../app.js"));

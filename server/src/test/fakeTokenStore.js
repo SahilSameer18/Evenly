@@ -16,6 +16,14 @@ export async function findRefreshToken(tokenHash) {
   return rows.get(tokenHash) ?? null;
 }
 
+export async function revokeFamily(familyId) {
+  for (const r of rows.values()) if (r.familyId === familyId && !r.revokedAt) r.revokedAt = new Date();
+}
+
+export function revokeUser(userId) {
+  for (const r of rows.values()) if (r.userId === userId && !r.revokedAt) r.revokedAt = new Date();
+}
+
 export async function rotateRefreshToken(oldId, next) {
   const old = [...rows.values()].find((r) => r.id === oldId);
   if (!old || old.usedAt || old.revokedAt || old.expiresAt <= new Date()) return null;

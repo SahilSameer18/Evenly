@@ -29,6 +29,18 @@ export async function login(req, res) {
   sendData(req, res, { user, accessToken, expiresIn: ACCESS_TTL_SECONDS });
 }
 
+export async function logout(req, res) {
+  await service.logout(req.cookies?.[REFRESH_COOKIE]);
+  res.clearCookie(REFRESH_COOKIE, cookieOptions);
+  sendData(req, res, { loggedOut: true });
+}
+
+export async function changePassword(req, res) {
+  const { accessToken, refreshToken } = await service.changePassword(req.user.id, req.valid.body);
+  setRefreshCookie(res, refreshToken);
+  sendData(req, res, { accessToken, expiresIn: ACCESS_TTL_SECONDS });
+}
+
 export async function refresh(req, res) {
   try {
     const { accessToken, refreshToken } = await service.refresh(req.cookies?.[REFRESH_COOKIE]);

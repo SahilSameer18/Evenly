@@ -6,6 +6,13 @@ export const registerBody = z.strictObject({
   name: z.string().trim().min(1, "Required").max(80),
 });
 
+export const changePasswordBody = z
+  .strictObject({
+    currentPassword: z.string().min(1, "Required").max(128),
+    newPassword: z.string().min(8, "Use at least 8 characters").max(128, "Use at most 128 characters"),
+  })
+  .refine((b) => b.currentPassword !== b.newPassword, { path: ["newPassword"], message: "Choose a different password" });
+
 // No minimum length here: login must not reveal the password rules. The max stops huge payloads being hashed.
 export const loginBody = z.strictObject({
   email: z.string().trim().toLowerCase().pipe(z.email().max(254)),

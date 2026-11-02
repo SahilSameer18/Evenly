@@ -11,6 +11,9 @@ import usersRoutes from "./modules/users/users.routes.js";
 
 const app = express();
 
+// shortcut: assumes exactly one proxy (the host's) in front of the app; check the hop count when deploying.
+if (env.NODE_ENV === "production") app.set("trust proxy", 1);
+
 app.use(requestLogger);
 app.use(helmet());
 app.use(cors({ origin: env.CLIENT_ORIGIN, credentials: true }));

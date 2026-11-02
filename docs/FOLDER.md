@@ -73,7 +73,8 @@ Evenly/
 │       │   ├── householdMembership.js       # (planned) Scopes :householdId; returns 404 for non-members
 │       │   ├── validate.js                  # Zod validation middleware for body, params, query -> req.valid
 │       │   ├── idempotency.js               # (planned) Enforces Idempotency-Key & prevents double-writes
-│       │   ├── rateLimiter.js               # (planned) Rate limiting for auth, expenses, and AI endpoints
+│       │   ├── rateLimiter.js               # Rate limiting (built for auth; expenses and AI endpoints later)
+│       │   ├── csrfGuard.js                 # Custom header + Origin check for cookie endpoints
 │       │   ├── errorHandler.js              # notFound + central error mapping with consistent error envelope
 │       │   └── __tests__/
 │       │

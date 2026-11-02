@@ -29,6 +29,24 @@ export function rotateRefreshToken(oldId, next) {
   });
 }
 
+// Kills every refresh token from one login (reuse detection, logout).
+export function revokeFamily(familyId) {
+  return prisma.refreshToken.updateMany({ where: { familyId, revokedAt: null }, data: { revokedAt: new Date() } });
+}
+
+// Second read that includes passwordHash: only for checking the current password on a password change.
+export function findUserWithHashById(id) {
+  return prisma.user.findUnique({ where: { id }, select: { id: true, passwordHash: true } });
+}
+
+// New password and every session revoked, or neither.
+export function updatePasswordAndRevokeSessions(userId, passwordHash) {
+  return prisma.$transaction([
+    prisma.user.update({ where: { id: userId }, data: { passwordHash } }),
+    prisma.refreshToken.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } }),
+  ]);
+}
+
 export function createUser({ email, name, passwordHash }) {
   return prisma.user.create({ data: { email, name, passwordHash }, select: PUBLIC_USER });
 }
