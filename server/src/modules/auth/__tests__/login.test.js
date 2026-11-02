@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeAll, beforeEach } from "vitest";
 import request from "supertest";
 
-vi.mock("../auth.repository.js", () => ({ findUserByEmail: vi.fn() }));
+vi.mock("../auth.repository.js", () => ({ findUserByEmail: vi.fn(), createRefreshToken: vi.fn() }));
 vi.mock("../../../lib/password.js", async (importOriginal) => {
   const real = await importOriginal();
   return { ...real, verifyPassword: vi.fn(real.verifyPassword) };
@@ -39,6 +39,14 @@ describe("POST /api/v1/auth/login", () => {
     expect(res.body.data.user).toEqual({ id: "user-1", email: "asha@example.com", name: "Asha", createdAt: "2026-11-02T00:00:00.000Z" });
     expect(JSON.stringify(res.body)).not.toMatch(/argon2|passwordHash/i);
     expect(repository.findUserByEmail).toHaveBeenCalledWith("asha@example.com");
+    expect(res.body.data.accessToken).toBeTruthy();
+    expect(res.headers["set-cookie"][0]).toMatch(/^refresh_token=/);
+  });
+
+  it("does not start a session when the login fails", async () => {
+    const res = await login({ email: "asha@example.com", password: "wrong-password" });
+    expect(res.headers["set-cookie"]).toBeUndefined();
+    expect(repository.createRefreshToken).not.toHaveBeenCalled();
   });
 
   it("rejects a wrong password with the generic error", async () => {

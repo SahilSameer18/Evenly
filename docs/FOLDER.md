@@ -30,17 +30,19 @@ Evenly/
 │   ├── package.json                         # "type": "module", dependencies & scripts
 │   ├── jsconfig.json                        # tsc --checkJs config for JSDoc type checking
 │   ├── eslint.config.js                     # ESLint flat config + restricted imports on ledger/
-│   ├── vitest.config.js                     # Test config with 100% branch coverage gate on ledger/
+│   ├── vitest.config.js                     # Runs src/test/setup.js first; test files run one at a time (shared test DB)
 │   ├── prisma7.config.ts                    # Prisma 7 CLI configuration
 │   │
 │   ├── prisma/
 │   │   ├── schema.prisma                    # Data models (User, Household, Expense, Split, etc.)
 │   │   ├── seed.js                          # Seeds a demo household with sample transactions
 │   │   └── migrations/                      # Versioned migrations
-│   │       ├── 20261031000000_init/
+│   │       ├── 20261102080203_init/
 │   │       │   └── migration.sql
-│   │       └── 20261031000001_checks_and_triggers/
-│   │           └── migration.sql            # Raw SQL: CHECK constraints & deferred sum trigger
+│   │       ├── 20261102090000_checks_and_triggers/
+│   │       │   └── migration.sql            # Raw SQL: CHECK constraints, deferred split-sum trigger, append-only audit trigger
+│   │       └── 20261102101224_refresh_tokens/
+│   │           └── migration.sql            # RefreshToken table
 │   │
 │   └── src/
 │       ├── app.js                           # Express app factory (middleware + routes, NO listen)
@@ -57,30 +59,34 @@ Evenly/
 │       │   ├── balances.js                  # calculateMemberBalances (asserts sum = 0)
 │       │   ├── suggest.js                   # suggestSettlements (greedy transfer planning)
 │       │   ├── refund.js                    # calculateRefundShares (pro-rata distribution)
-│       │   ├── types.js                     # JSDoc typedefs (Expense, Split, Settlement, NetBalances)
+│       │   ├── errors.js                    # LedgerError with stable codes
+│       │   ├── types.js                     # (planned) JSDoc typedefs (Expense, Split, Settlement, NetBalances)
 │       │   └── __tests__/
 │       │       ├── money.test.js            # Input validation, decimals, whitespace, commas
-│       │       ├── split.test.js            # Test vectors 1, 2, 3, 13
-│       │       ├── balances.test.js         # Test vectors 4, 5, 6, 7, 8, 10, 11, 14
-│       │       ├── suggest.test.js          # Test vectors 9, 12
+│       │       ├── split.test.js            # Test vectors 1, 2, 3, 13; hash tie-break spreads the extra paisa
+│       │       ├── balances.test.js         # Test vectors 4-12, 14 (balances, suggestions, refunds)
 │       │       └── ledger.property.test.js  # fast-check (10,000 runs: sum=0, split diff <= 1)
 │       │
-│       ├── middleware/
-│       │   ├── requestId.js                 # Attaches unique UUID trace to every request
-│       │   ├── logger.js                    # Pino HTTP request logging
+│       ├── middlewares/                     # (built: requestLogger, errorHandler, validate, authenticate)
+│       │   ├── requestLogger.js             # Request id (X-Request-Id) + Pino HTTP logging, no headers logged
 │       │   ├── authenticate.js              # Access token verification & req.user attachment
-│       │   ├── householdMembership.js       # Scopes :householdId; returns 404 for non-members
-│       │   ├── validate.js                  # Zod validation middleware for body, params, query
-│       │   ├── idempotency.js               # Enforces Idempotency-Key & prevents double-writes
-│       │   ├── rateLimiter.js               # Rate limiting for auth, expenses, and AI endpoints
-│       │   └── errorHandler.js              # Central error mapping with consistent error envelope
+│       │   ├── householdMembership.js       # (planned) Scopes :householdId; returns 404 for non-members
+│       │   ├── validate.js                  # Zod validation middleware for body, params, query -> req.valid
+│       │   ├── idempotency.js               # (planned) Enforces Idempotency-Key & prevents double-writes
+│       │   ├── rateLimiter.js               # (planned) Rate limiting for auth, expenses, and AI endpoints
+│       │   ├── errorHandler.js              # notFound + central error mapping with consistent error envelope
+│       │   └── __tests__/
 │       │
-│       ├── shared/
-│       │   ├── db.js                        # PrismaClient singleton instance
-│       │   ├── errors.js                    # Domain errors (NotFoundError, ConflictError, etc.)
-│       │   ├── response.js                  # Standard success { data, meta } envelope helper
+│       ├── lib/
+│       │   ├── prisma.js                    # PrismaClient singleton (Neon adapter)
 │       │   ├── logger.js                    # Base structured logger (Pino)
-│       │   └── tokens.js                    # Password hashing (Argon2id) & JWT generation/rotation
+│       │   ├── password.js                  # Argon2id hash / verify
+│       │   ├── tokens.js                    # Access JWT (jose) + opaque refresh token generation / hashing
+│       │   └── __tests__/
+│       │
+│       ├── utils/
+│       │   ├── errors.js                    # AppError and subclasses with stable codes
+│       │   └── response.js                  # Standard success { data, meta } envelope helper
 │       │
 │       ├── modules/                         # Vertical Feature Slices
 │       │   ├── auth/
@@ -89,7 +95,13 @@ Evenly/
 │       │   │   ├── auth.service.js          # Sessions, refresh token family rotation & revocation
 │       │   │   ├── auth.repository.js
 │       │   │   ├── auth.validation.js       # Register, login, refresh Zod schemas
-│       │   │   └── auth.test.js
+│       │   │   └── __tests__/                   # register, login, sessions (fake repository) + .db variants (real test DB)
+│       │   │
+│       │   ├── users/
+│       │   │   ├── users.routes.js              # GET /users/me
+│       │   │   ├── users.controller.js
+│       │   │   ├── users.repository.js
+│       │   │   └── __tests__/
 │       │   │
 │       │   ├── households/
 │       │   │   ├── household.routes.js
@@ -97,7 +109,7 @@ Evenly/
 │       │   │   ├── household.service.js     # Single-use invitation tokens (7-day expiry)
 │       │   │   ├── household.repository.js
 │       │   │   ├── household.validation.js
-│       │   │   └── household.test.js
+│       │   │   └── __tests__/
 │       │   │
 │       │   ├── expenses/
 │       │   │   ├── expense.routes.js
@@ -105,7 +117,7 @@ Evenly/
 │       │   │   ├── expense.service.js       # Transaction: expense + splits + audit log
 │       │   │   ├── expense.repository.js    # Strict householdId tenant filtering
 │       │   │   ├── expense.validation.js    # Discriminated union split schemas
-│       │   │   └── expense.test.js
+│       │   │   └── __tests__/                   # (built) repository tenant-scoping test
 │       │   │
 │       │   ├── settlements/
 │       │   │   ├── settlement.routes.js
@@ -113,18 +125,19 @@ Evenly/
 │       │   │   ├── settlement.service.js    # Repayment confirmation lifecycle & runtime check
 │       │   │   ├── settlement.repository.js
 │       │   │   ├── settlement.validation.js
-│       │   │   └── settlement.test.js
+│       │   │   └── __tests__/
 │       │   │
 │       │   └── ai/                          # Part 4 (AI Behind a Strict Trust Boundary)
 │       │       ├── ai.routes.js
 │       │       ├── ai.controller.js
 │       │       ├── ai.service.js            # Gemini API caller (Drafts only, no ledger write access)
 │       │       ├── ai.validation.js         # Zod schema for structured AI draft outputs
-│       │       └── ai.test.js               # Golden test set (Hinglish, ambiguous, adversarial)
+│       │       └── __tests__/               # Golden test set (Hinglish, ambiguous, adversarial)
 │       │
 │       └── test/                            # Integration testing infrastructure
-│           ├── setup.js                     # Test environment hooks
-│           ├── db-helper.js                 # Transaction rollback / truncate helper
+│           ├── setup.js                     # Points the app at TEST_DATABASE_URL; test JWT secret
+│           ├── db-helper.js                 # resetDb() truncate helper; refuses to run on the dev database
+│           ├── fakeTokenStore.js            # In-memory RefreshToken table for tests that mock the repository
 │           └── factories.js                 # User, Household, Expense test object factories
 │
 └── client/                                  # Mobile-First React PWA (Vite + Tailwind)

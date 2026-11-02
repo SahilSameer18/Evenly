@@ -75,6 +75,24 @@ model User {
   settlementsGot  Settlement[]      @relation("SettlementTo")
   settlementsMade Settlement[]      @relation("SettlementCreatedBy")
   auditEvents     AuditEvent[]
+  refreshTokens   RefreshToken[]
+}
+
+// Only the SHA-256 hash of a refresh token is stored. All tokens from one login share a familyId.
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  familyId  String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([familyId])
 }
 
 model Household {

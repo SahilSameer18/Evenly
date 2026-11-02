@@ -7,5 +7,6 @@ const router = Router();
 
 router.post("/register", validate({ body: registerBody }), controller.register);
 router.post("/login", validate({ body: loginBody }), controller.login);
+router.post("/refresh", controller.refresh);
 
 export default router;
