@@ -6,7 +6,7 @@ const url = process.env.TEST_DATABASE_URL;
 if (!url) {
   throw new Error("TEST_DATABASE_URL is not set. Point it at a separate Neon branch, never the dev database.");
 }
-if (url === process.env.DATABASE_URL || url === process.env.DIRECT_URL) {
+if (url === process.env.DEV_DATABASE_URL || url === process.env.DEV_DIRECT_URL) {
   throw new Error("TEST_DATABASE_URL must not be the dev database: tests wipe every table.");
 }
 

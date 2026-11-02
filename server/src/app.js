@@ -5,6 +5,7 @@ import env from "./config/env.js";
 import prisma from "./lib/prisma.js";
 import requestLogger from "./middlewares/requestLogger.js";
 import { notFound, errorHandler } from "./middlewares/errorHandler.js";
+import authRoutes from "./modules/auth/auth.routes.js";
 
 const app = express();
 
@@ -25,6 +26,8 @@ app.get("/ready", async (req, res) => {
     res.status(503).json({ status: "database_unreachable" });
   }
 });
+
+app.use("/api/v1/auth", authRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
