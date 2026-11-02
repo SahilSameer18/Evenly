@@ -38,7 +38,7 @@ Algorithm (largest remainder), for any split by weights w₁…wₙ with total w
 For each person: num = total × wᵢ.
 share = floor(num / W), remainder = num mod W.
 left = total - Σ share (always 0 ≤ left < n).
-Give +1 paisa to the people with the largest remainder, one each, until left = 0. Break ties by userId (sorted).
+Give +1 paisa to the people with the largest remainder, one each, until left = 0. Break ties by hash(seed + userId), then by userId. The seed is the expense id, so the same expense always splits the same way, but the extra paisa does not always land on the same person across expenses.
 Equal split = every weight is 1. Percentage = weights are basis points (1% = 100 bps, total 10000). Shares (2:1:1) = weights 2, 1, 1. Exact amounts = no maths, just check Σ shares = total or reject with SPLIT_MISMATCH.
 
 Why one rule: one function means one place to test and one set of edge cases. The blueprint writes equal split and bps split separately; they are the same algorithm, so I'd write it once.
@@ -51,11 +51,11 @@ Overflow check: total × weight is at most about 10⁹ × 10⁴ = 10¹³, safe i
 
 Checked examples
 Input	Result
-10000 equal among A, B, C	A 3334, B 3333, C 3333 (sum 10000)
-100 equal among A, B, C	A 34, B 33, C 33
+10000 equal among A, B, C	one person gets 3334, the other two 3333 (sum 10000); who gets the extra paisa depends on the seed
+100 equal among A, B, C	one person gets 34, the other two 33; who depends on the seed
 10001 by bps A 6000 / B 4000	A 6001, B 4000 (A's remainder 6000 > B's 4000)
 10001 by weights 2:1:1	A 5001, B 2500, C 2500
-Properties to test: shares always sum to the total; equal-split shares differ by at most 1 paisa; the order of the input list never changes the result.
+Properties to test: shares always sum to the total; equal-split shares differ by at most 1 paisa; the order of the input list never changes the result; over many expenses the extra paisa is spread across people.
 
 4. Amount parsing (toMinor)
 input "1,250.5"  →  strip commas  →  match ^(\d+)(?:\.(\d{1,2}))?$
@@ -90,7 +90,7 @@ Worked: start +300 / -300, confirmed repayment of 200 → You +100, Roommate -10
 Reverse: mark the expense reversed and exclude it; keep the row and write an audit event. Balances must equal the ledger without it. Why: deleting loses history and breaks "why is this number what it is".
 Refund (pro rata): split the refund using the original shares as weights, with the same remainder rule.
 20000 refund on a 100000 equal split between A and B: weights 50000:50000 → 10000 each.
-20001 refund: A 10001, B 10000 (tie broken by userId).
+20001 refund: one of A, B gets 10001 and the other 10000 (tie broken by the seed hash, then userId).
 Why original shares: each person gets back the proportion they originally paid for.
 Refunds have a negative effect on Paid/Share, so the invariant still holds.
 8. Receipt maths
