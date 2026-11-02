@@ -10,3 +10,226 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+// Enum values are lowercase so they match the strings used by server/src/ledger.
+
+enum MemberRole {
+  owner
+  member
+}
+
+enum MemberStatus {
+  active
+  left
+}
+
+enum SplitMethod {
+  equal
+  exact
+  percentage
+  weights
+}
+
+enum ExpenseType {
+  shared
+  personal
+  on_behalf
+}
+
+enum ExpenseStatus {
+  confirmed
+  disputed
+  reversed
+}
+
+enum SettlementMethod {
+  cash
+  upi
+  bank
+  other
+}
+
+enum SettlementStatus {
+  pending
+  confirmed
+  rejected
+  cancelled
+}
+
+// Part A: people and households
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  memberships     HouseholdMember[]
+  invitationsSent Invitation[]
+  expensesCreated Expense[]         @relation("ExpenseCreatedBy")
+  expensesPaid    Expense[]         @relation("ExpensePaidBy")
+  splits          ExpenseSplit[]
+  settlementsSent Settlement[]      @relation("SettlementFrom")
+  settlementsGot  Settlement[]      @relation("SettlementTo")
+  settlementsMade Settlement[]      @relation("SettlementCreatedBy")
+  auditEvents     AuditEvent[]
+}
+
+model Household {
+  id                 String      @id @default(cuid())
+  name               String
+  currency           String      @default("INR")
+  timezone           String      @default("Asia/Kolkata")
+  defaultSplitMethod SplitMethod @default(equal)
+  createdAt          DateTime    @default(now())
+  archivedAt         DateTime?
+
+  members     HouseholdMember[]
+  invitations Invitation[]
+  categories  Category[]
+  expenses    Expense[]
+  splits      ExpenseSplit[]
+  settlements Settlement[]
+  auditEvents AuditEvent[]
+}
+
+model HouseholdMember {
+  id          String       @id @default(cuid())
+  householdId String
+  userId      String
+  role        MemberRole   @default(member)
+  status      MemberStatus @default(active)
+  joinedAt    DateTime     @default(now())
+  leftAt      DateTime?
+
+  household Household @relation(fields: [householdId], references: [id])
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@unique([householdId, userId])
+  @@index([userId, status])
+}
+
+model Invitation {
+  id           String    @id @default(cuid())
+  householdId  String
+  invitedById  String
+  tokenHash    String    @unique
+  invitedEmail String?
+  expiresAt    DateTime
+  usedAt       DateTime?
+  createdAt    DateTime  @default(now())
+
+  household Household @relation(fields: [householdId], references: [id])
+  invitedBy User      @relation(fields: [invitedById], references: [id])
+
+  @@index([householdId])
+}
+
+// Part B: money. All amounts are integer paise.
+
+model Category {
+  id          String  @id @default(cuid())
+  householdId String? // null = system category
+  name        String
+  isArchived  Boolean @default(false)
+
+  household Household? @relation(fields: [householdId], references: [id])
+  expenses  Expense[]
+
+  @@unique([householdId, name])
+}
+
+model Expense {
+  id             String        @id @default(cuid())
+  householdId    String
+  createdById    String
+  paidById       String
+  categoryId     String?
+  description    String
+  notes          String?
+  amountMinor    Int
+  type           ExpenseType
+  splitMethod    SplitMethod
+  status         ExpenseStatus @default(confirmed)
+  version        Int           @default(1)
+  occurredAt     DateTime
+  reversalOfId   String?
+  idempotencyKey String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  household  Household      @relation(fields: [householdId], references: [id])
+  createdBy  User           @relation("ExpenseCreatedBy", fields: [createdById], references: [id])
+  paidBy     User           @relation("ExpensePaidBy", fields: [paidById], references: [id])
+  category   Category?      @relation(fields: [categoryId], references: [id])
+  reversalOf Expense?       @relation("ExpenseReversal", fields: [reversalOfId], references: [id])
+  reversals  Expense[]      @relation("ExpenseReversal")
+  splits     ExpenseSplit[]
+
+  @@unique([createdById, idempotencyKey])
+  @@index([householdId, occurredAt(sort: Desc)])
+  @@index([householdId, status, occurredAt(sort: Desc)])
+}
+
+model ExpenseSplit {
+  id          String @id @default(cuid())
+  expenseId   String
+  householdId String
+  userId      String
+  shareMinor  Int
+
+  expense   Expense   @relation(fields: [expenseId], references: [id])
+  household Household @relation(fields: [householdId], references: [id])
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@unique([expenseId, userId])
+  @@index([householdId, userId])
+}
+
+model Settlement {
+  id               String           @id @default(cuid())
+  householdId      String
+  fromUserId       String
+  toUserId         String
+  createdById      String
+  amountMinor      Int
+  method           SettlementMethod
+  paymentReference String?
+  note             String?
+  status           SettlementStatus @default(pending)
+  idempotencyKey   String?
+  initiatedAt      DateTime         @default(now())
+  confirmedAt      DateTime?
+
+  household Household @relation(fields: [householdId], references: [id])
+  from      User      @relation("SettlementFrom", fields: [fromUserId], references: [id])
+  to        User      @relation("SettlementTo", fields: [toUserId], references: [id])
+  createdBy User      @relation("SettlementCreatedBy", fields: [createdById], references: [id])
+
+  @@unique([createdById, idempotencyKey])
+  @@index([householdId, status, initiatedAt(sort: Desc)])
+}
+
+// Append-only: no route may update or delete these rows.
+model AuditEvent {
+  id          String   @id @default(cuid())
+  householdId String
+  actorUserId String
+  entityType  String
+  entityId    String
+  action      String
+  before      Json?
+  after       Json?
+  reason      String?
+  requestId   String?
+  createdAt   DateTime @default(now())
+
+  household Household @relation(fields: [householdId], references: [id])
+  actor     User      @relation(fields: [actorUserId], references: [id])
+
+  @@index([householdId, entityType, entityId])
+  @@index([householdId, createdAt(sort: Desc)])
+}
+
