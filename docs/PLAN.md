@@ -35,7 +35,8 @@ Phase	State	Notes
 1.5	Done	All 14 sub-phases, SECURITY.md v1, ADR 005. Rate limits are in memory.
 1.6	Done	Households, membership middleware with the 404 rule, owner-only settings, single-use invitations, leave with balance check and ownership transfer, authorization suite, end-to-end gate test, SECURITY.md tenancy section, ADR 003.
 Part 1 gate	Met, with three gaps	Two real users sign up, share a household and a third gets 404 on everything (tested end to end against a real database). Gaps: the ledger is not tagged ledger-v0.1, there is no CI (by choice), and branch coverage is not measured.
-2 and later	Not started	Next: expense create and read API with idempotency keys (2.1).
+2.1	Done	Expense create and read API: four split methods, personal and on-behalf types, idempotency keys, one-transaction writes with an audit event, filters and cursor pagination, private personal expenses (ADR 004).
+2.2 onward	Not started	Next: edit with optimistic locking, reverse, refund, dispute (2.2), then settlements and balances (2.3), then the frontend (2.4 and 2.5).
 
 Where the build differs from this plan
 - Leftover paise are given by a hash of the expense id and user id, not by userId order (ADR 001).

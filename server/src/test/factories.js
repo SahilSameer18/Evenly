@@ -19,7 +19,7 @@ export function addMember(household, user, role = "member") {
 }
 
 /** An expense paid by `payer`, split by `shares` ({ userId: paise }). The splits must add up (the database checks). */
-export function addExpense(household, payer, amountMinor, shares, type = "shared") {
+export function addExpense(household, payer, amountMinor, shares, type = "shared", extra = {}) {
   return testDb.expense.create({
     data: {
       householdId: household.id,
@@ -30,6 +30,7 @@ export function addExpense(household, payer, amountMinor, shares, type = "shared
       type,
       splitMethod: "exact",
       occurredAt: new Date(),
+      ...extra, // description, occurredAt, categoryId, notes, status, idempotencyKey, requestHash
       splits: { create: Object.entries(shares).map(([userId, shareMinor]) => ({ householdId: household.id, userId, shareMinor })) },
     },
   });

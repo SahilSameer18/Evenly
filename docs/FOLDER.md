@@ -72,7 +72,7 @@ Evenly/
 │       │   ├── authenticate.js              # Access token verification & req.user attachment
 │       │   ├── householdMembership.js       # Scopes :householdId; returns 404 for non-members
 │       │   ├── validate.js                  # Zod validation middleware for body, params, query -> req.valid
-│       │   ├── idempotency.js               # (planned) Enforces Idempotency-Key & prevents double-writes
+│       │   ├── idempotency.js               # Requires and validates the Idempotency-Key header (sets req.idempotencyKey)
 │       │   ├── rateLimiter.js               # Rate limiting (built for auth; expenses and AI endpoints later)
 │       │   ├── csrfGuard.js                 # Custom header + Origin check for cookie endpoints
 │       │   ├── errorHandler.js              # notFound + central error mapping with consistent error envelope
@@ -88,7 +88,9 @@ Evenly/
 │       │
 │       ├── utils/
 │       │   ├── errors.js                    # AppError and subclasses with stable codes
-│       │   └── response.js                  # Standard success { data, meta } envelope helper
+│       │   ├── response.js                  # Standard success { data, meta } envelope helper (optional extra meta, e.g. pagination)
+│       │   ├── canonicalHash.js             # Key-order-independent JSON + SHA-256, for idempotency request hashes
+│       │   └── cursor.js                    # Opaque pagination cursor encode / decode
 │       │
 │       ├── modules/                         # Vertical Feature Slices
 │       │   ├── auth/
@@ -116,9 +118,9 @@ Evenly/
 │       │   ├── expenses/
 │       │   │   ├── expense.routes.js
 │       │   │   ├── expense.controller.js
-│       │   │   ├── expense.service.js       # Transaction: expense + splits + audit log
-│       │   │   ├── expense.repository.js    # Strict householdId tenant filtering
-│       │   │   ├── expense.validation.js    # Discriminated union split schemas
+│       │   │   ├── expense.service.js       # Idempotent create: member checks, ledger split, replay or 422
+│       │   │   ├── expense.repository.js    # Strict householdId tenant filtering; one transaction for expense + splits + audit
+│       │   │   ├── expense.validation.js    # Union on type (shared / personal / on_behalf), split union, list query
 │       │   │   └── __tests__/                   # (built) repository tenant-scoping test
 │       │   │
 │       │   ├── settlements/

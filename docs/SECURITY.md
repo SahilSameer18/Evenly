@@ -54,6 +54,18 @@ The household is the tenant boundary. Knowing an id never grants access. Decisio
 
 The authorization suite (`households/__tests__/authorization.db.test.js`) and the end-to-end Part 1 gate test (`src/__tests__/part1.gate.db.test.js`) run against a real database.
 
+## Expenses
+
+| Area | What is enforced | Where |
+|---|---|---|
+| Safe retries | Creating an expense needs an `Idempotency-Key`. The same key with the same request returns the stored expense; the same key with a different request is `422 IDEMPOTENCY_KEY_REUSED`. Two simultaneous identical requests create exactly one expense, because the unique index decides. Decision record: [ADR 004](ADR/004-idempotency-strategy.md). | `middlewares/idempotency.js`, `expense.service.js`, unique index on `(createdById, idempotencyKey)` |
+| All or nothing | The expense, its splits and its audit event are one transaction. If any part fails, none is saved. The database also refuses splits that do not add up to the amount. | `expense.repository.js`, the guards migration |
+| Private expenses | Personal expenses are visible only to their creator. Every read applies the filter inside the repository, so a new query cannot forget it. Others get the same `404` as for a missing id, and no filter can reveal them. Personal expenses never count in balances. | `expense.repository.js` |
+| Who can be named | The payer, every participant and the beneficiary must be active members of the household, and a category must be a system one or this household's. | `expense.service.js` |
+| Input limits | Amounts are whole paise, above 0 and at most 1,000,000,000. Descriptions are 1 to 140 characters. The "not in the future" check reads the clock on each request. | `expense.validation.js` |
+| Pagination | Cursors are opaque and carry no authority: the query still applies the household and visibility filters, so a forged cursor cannot reach data the caller could not already see. Page size is capped at 100. | `utils/cursor.js`, `expense.repository.js` |
+| Hidden fields | `requestHash` and `idempotencyKey` are never returned. | `expense.repository.js` |
+
 ## Known limits
 
 - **Rate limits are per IP and in memory.** They reset on restart and are not shared between servers. Someone behind the same IP as you shares your allowance. Move to a shared store before running more than one instance.
@@ -65,12 +77,14 @@ The authorization suite (`households/__tests__/authorization.db.test.js`) and th
 - **Exactly one owner is enforced by the service**, inside the transaction, not by a database constraint.
 - **The leave check loads the household's whole ledger.** Fine at household scale; revisit if ledgers grow large.
 - **Household changes are not written to the audit log** (it is for financial changes). Joins, leaves and ownership changes are visible only in the membership rows.
+- **Idempotency keys are kept forever** for now, and a retry returns the expense as currently stored (after edits exist, that is the edited version).
+- **Expense creation is not rate limited** yet, beyond the 100 kb body limit.
 - **Trust proxy is set to one hop in production.** Check the real hop count when deploying, or IP limits will see the proxy instead of the client.
 
 ## Not done yet
 
 - Removing another member (members can only leave), and emailing invitations (the owner copies the link).
-- Idempotency keys, and optimistic locking on edits (Part 2).
+- Idempotency for settlements, and optimistic locking on edits (Phase 2.2 and 2.3).
 - Email verification and password reset.
 - CI. The real-database tests (races, token rotation) run locally against a separate Neon test branch, but nothing runs them automatically on a push.
 - Dependency auditing and a full review against the threat model (Part 7).

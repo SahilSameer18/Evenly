@@ -175,6 +175,7 @@ model Expense {
   occurredAt     DateTime
   reversalOfId   String?
   idempotencyKey String?
+  requestHash    String? // SHA-256 of the cleaned create request; tells a retry apart from a reused key
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 

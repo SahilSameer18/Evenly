@@ -2,7 +2,9 @@
 
 Shared-expense tracker for roommates. Every balance is computed from recorded transactions and can be explained down to the individual expense.
 
-> **Status:** early development, not deployed. Part 1 is done: the money engine, database, authentication and households (with tenant isolation) are built and tested. Expenses, settlements and the app UI are next. See [the plan](docs/PLAN.md) and the [dev log](docs/DEVLOG.md).
+**Engineered by [Sahil Sameer Siddique](https://www.linkedin.com/in/sahil-sameer-siddique/)** · [LinkedIn](https://www.linkedin.com/in/sahil-sameer-siddique/)
+
+> **Status:** early development, not deployed. Part 1 is done: the money engine, database, authentication and households (with tenant isolation) are built and tested. Part 2 has started: the expense create and read API is built. Edit/reverse, settlements and the app UI are next. See [the plan](docs/PLAN.md) and the [dev log](docs/DEVLOG.md).
 
 ## Principles
 
@@ -22,7 +24,8 @@ Shared-expense tracker for roommates. Every balance is computed from recorded tr
 | Authentication | Register, login, 15-minute access tokens, rotating refresh-token cookie with reuse detection, logout, password change, rate limiting, CSRF guard. Details in [SECURITY.md](docs/SECURITY.md). |
 | Households | Create, list, view, change settings (owner only), single-use invitation links, leave (blocked while a balance is outstanding). Every household route checks membership, and outsiders get 404. See [ADR 003](docs/ADR/003-tenancy-and-authz.md). |
 | API plumbing | Request ids, structured logs, one response/error envelope, Zod validation on every input. |
-| Expenses, settlements, UI | Not built yet. |
+| Expenses | Create shared (equal, exact, percentage or weighted split), personal (private to its creator) and on-behalf expenses. Retries are safe: an `Idempotency-Key` makes a double tap create exactly one expense. List with filters and cursor pagination, and detail by id. Every create writes the expense, its splits and an audit event in one transaction. See [ADR 004](docs/ADR/004-idempotency-strategy.md). |
+| Edit and reverse, settlements, balances endpoint, UI | Not built yet. |
 
 ## How a request is handled
 
@@ -100,6 +103,24 @@ sequenceDiagram
     S-->>B: 403, only the owner can change settings
 ```
 
+## Recording an expense
+
+Retrying is always safe. The client makes an `Idempotency-Key` when the form opens, so a double tap or a dropped connection cannot create two rent payments.
+
+```mermaid
+flowchart TD
+    Req["POST /households/:id/expenses<br/>with an Idempotency-Key header"] --> Auth["authenticate, then membership check<br/>outsiders get 404"]
+    Auth --> Val["validate the body<br/>shared, personal or on_behalf"]
+    Val --> Seen{"has this user<br/>used this key before?"}
+    Seen -- "same request" --> Replay["return the stored expense<br/>header Idempotent-Replayed: true"]
+    Seen -- "a different request" --> Clash["422 IDEMPOTENCY_KEY_REUSED"]
+    Seen -- "new key" --> Check["payer, participants and category<br/>must belong to this household"]
+    Check --> Split["ledger splits the amount<br/>a bad total is a 422"]
+    Split --> Tx["one transaction:<br/>expense, splits and audit event"]
+    Tx --> Guard[("database refuses splits that<br/>do not add up to the amount")]
+    Tx --> Done["201 with the saved expense"]
+```
+
 ## Data model
 
 Every row that belongs to a household carries its `householdId`. Money is stored as integer paise.
@@ -136,6 +157,9 @@ erDiagram
 | POST | `/households/:householdId/invitations` | Create a single-use invitation link (owner only) |
 | POST | `/invitations/accept` | Join a household with an invitation token |
 | POST | `/households/:householdId/leave` | Leave (balance must be zero; an owner names a successor) |
+| POST | `/households/:householdId/expenses` | Record an expense (needs an `Idempotency-Key` header) |
+| GET | `/households/:householdId/expenses` | List expenses: filters `from`, `to`, `categoryId`, `paidById`, `type`, `status`, `q`; `limit` and `cursor` for pages |
+| GET | `/households/:householdId/expenses/:expenseId` | One expense with its splits (404 if it is someone else's personal expense) |
 
 `GET /health` and `GET /ready` are the liveness and database checks.
 
@@ -217,3 +241,7 @@ npx prisma migrate resolve --applied <migration-name>   # once per migration, wi
 ```
 
 Or point `DIRECT_URL` at an empty test branch and run `npx prisma migrate deploy`.
+
+---
+
+Engineered by **[Sahil Sameer Siddique](https://www.linkedin.com/in/sahil-sameer-siddique/)** · [Connect on LinkedIn](https://www.linkedin.com/in/sahil-sameer-siddique/)
