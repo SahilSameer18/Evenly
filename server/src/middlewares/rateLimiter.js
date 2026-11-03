@@ -24,5 +24,7 @@ export const registerLimiter = createLimiter({ windowMs: 60 * MINUTE, limit: tes
 // Only failed logins count, so a real user is never locked out by their own successes.
 export const loginLimiter = createLimiter({ windowMs: 15 * MINUTE, limit: testing ? 10_000 : 10, skipSuccessfulRequests: true });
 export const refreshLimiter = createLimiter({ windowMs: 15 * MINUTE, limit: testing ? 10_000 : 60 });
+// Invitation tokens are unguessable, but accepting is still a lookup an attacker could hammer.
+export const inviteLimiter = createLimiter({ windowMs: 15 * MINUTE, limit: testing ? 10_000 : 10 });
 // A stolen access token could otherwise be used to guess the current password.
 export const passwordLimiter = createLimiter({ windowMs: 15 * MINUTE, limit: testing ? 10_000 : 5 });

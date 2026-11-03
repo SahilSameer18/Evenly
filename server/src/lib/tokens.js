@@ -37,5 +37,6 @@ export async function verifyAccessToken(token) {
 
 // Refresh token: 256 random bits with no meaning. Only its SHA-256 hash is stored, so a database leak
 // cannot be replayed. A fast hash is fine here because the input is already unguessable (unlike a password).
-export const newRefreshToken = () => randomBytes(32).toString("base64url");
+export const newOpaqueToken = () => randomBytes(32).toString("base64url"); // also used for invitation links
+export const newRefreshToken = newOpaqueToken;
 export const hashToken = (token) => createHash("sha256").update(token).digest("hex");

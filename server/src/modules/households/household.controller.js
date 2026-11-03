@@ -12,3 +12,12 @@ export async function list(req, res) {
 export async function get(req, res) {
   sendData(req, res, { household: await service.getHousehold(req.membership) });
 }
+
+export async function invite(req, res) {
+  const { invitation, token } = await service.createInvitation(req.membership, req.valid.body);
+  sendData(req, res, { invitation, token }, 201);
+}
+
+export async function accept(req, res) {
+  sendData(req, res, { household: await service.acceptInvitation(req.user.id, req.valid.body.token) });
+}
