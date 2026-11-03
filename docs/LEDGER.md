@@ -87,12 +87,19 @@ Rules: sender ≠ recipient; both are active members; amount > 0.
 Worked: start +300 / -300, confirmed repayment of 200 → You +100, Roommate -100. Pending 300 → unchanged.
 
 7. Reversals and refunds
-Reverse: mark the expense reversed and exclude it; keep the row and write an audit event. Balances must equal the ledger without it. Why: deleting loses history and breaks "why is this number what it is".
-Refund (pro rata): split the refund using the original shares as weights, with the same remainder rule.
-20000 refund on a 100000 equal split between A and B: weights 50000:50000 → 10000 each.
+Reverse: mark the expense reversed and exclude it; keep the row and write an audit event with the reason. Balances must equal the ledger without it. Why: deleting loses history and breaks "why is this number what it is". Reversing again changes nothing and writes no second event. An expense that still has refunds cannot be reversed: reverse the refunds first.
+Refund (pro rata): a refund is its own record, of type refund, linked to the expense it gives money back on. It is stored with positive numbers like any expense, and the ledger counts it the other way round: the payer paid less, and each person owes less. Its shares use the original shares as weights, with the same remainder rule.
+20000 refund on a 100000 equal split between A and B: weights 50000:50000 → 10000 each. A ends at +40000 and B at -40000.
 20001 refund: one of A, B gets 10001 and the other 10000 (tie broken by the seed hash, then userId).
 Why original shares: each person gets back the proportion they originally paid for.
-Refunds have a negative effect on Paid/Share, so the invariant still holds.
+Refunds of one expense can never add up to more than its amount. A refund of the full amount cancels the expense exactly. A reversed refund is ignored, which gives its amount back to the original.
+Refunds count as a negative Paid/Share, so the invariant (Σ net = 0) still holds. Why store positive numbers: the database insists that amounts are above zero, which keeps one of its guards intact.
+Expense status and who can change it
+Status	Counts in balances	How an expense gets there
+confirmed	yes	created; edited; or a dispute withdrawn
+disputed	yes	another member disputes it, with a reason
+reversed	no	the person who recorded it reverses it, with a reason (final: a reversed expense is never edited or reopened)
+Transitions: confirmed → disputed (any member except the one who recorded it); disputed → confirmed (the person who raised it withdraws it, or the person who recorded it edits it); confirmed or disputed → reversed (the person who recorded it). Only the person who recorded an expense can edit or reverse it. Every transition adds 1 to the version and writes an audit event. An edit needs the current version, so two people changing the same expense at once cannot overwrite each other: one succeeds and the other gets 409 STALE_VERSION.
 8. Receipt maths
 Receipt: items 700 + 200 + 100 = ₹1000, tax 5% = ₹50, no discount, total ₹1050.
 

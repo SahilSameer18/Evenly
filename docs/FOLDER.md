@@ -15,7 +15,8 @@ Evenly/
 │       ├── 002-database-selection.md        # Why PostgreSQL (Neon) + Prisma over MongoDB
 │       ├── 003-tenancy-and-authz.md         # householdId scoping & the 404 security rule
 │       ├── 004-idempotency-strategy.md      # Idempotency-Key header & unique DB constraints
-│       └── 005-cookie-session-auth.md       # Rotating refresh tokens in HTTP-only cookies
+│       ├── 005-cookie-session-auth.md       # Rotating refresh tokens in HTTP-only cookies
+│       └── 006-expense-lifecycle.md         # Edit / reverse / refund / dispute: locking, creator-only, positive refunds
 │
 ├── e2e/                                     # Playwright end-to-end test suite
 │   ├── package.json
@@ -118,9 +119,9 @@ Evenly/
 │       │   ├── expenses/
 │       │   │   ├── expense.routes.js
 │       │   │   ├── expense.controller.js
-│       │   │   ├── expense.service.js       # Idempotent create: member checks, ledger split, replay or 422
-│       │   │   ├── expense.repository.js    # Strict householdId tenant filtering; one transaction for expense + splits + audit
-│       │   │   ├── expense.validation.js    # Union on type (shared / personal / on_behalf), split union, list query
+│       │   │   ├── expense.service.js       # Create (idempotent), edit, reverse, refund, dispute, history; who may do what
+│       │   │   ├── expense.repository.js    # Tenant-scoped; row lock before every change; one transaction for expense + splits + audit
+│       │   │   ├── expense.validation.js    # Union on type (shared / personal / on_behalf), split union, edit, refund, reason, list query
 │       │   │   └── __tests__/                   # (built) repository tenant-scoping test
 │       │   │
 │       │   ├── settlements/

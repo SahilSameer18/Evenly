@@ -4,7 +4,7 @@ Shared-expense tracker for roommates. Every balance is computed from recorded tr
 
 **Engineered by [Sahil Sameer Siddique](https://www.linkedin.com/in/sahil-sameer-siddique/)** · [LinkedIn](https://www.linkedin.com/in/sahil-sameer-siddique/)
 
-> **Status:** early development, not deployed. Part 1 is done: the money engine, database, authentication and households (with tenant isolation) are built and tested. Part 2 has started: the expense create and read API is built. Edit/reverse, settlements and the app UI are next. See [the plan](docs/PLAN.md) and the [dev log](docs/DEVLOG.md).
+> **Status:** early development, not deployed. Part 1 is done: the money engine, database, authentication and households (with tenant isolation) are built and tested. Part 2 is under way: the expense API is complete (create, read, edit, reverse, refund, dispute, history). Settlements, balances and the app UI are next. See [the plan](docs/PLAN.md) and the [dev log](docs/DEVLOG.md).
 
 ## Principles
 
@@ -25,7 +25,8 @@ Shared-expense tracker for roommates. Every balance is computed from recorded tr
 | Households | Create, list, view, change settings (owner only), single-use invitation links, leave (blocked while a balance is outstanding). Every household route checks membership, and outsiders get 404. See [ADR 003](docs/ADR/003-tenancy-and-authz.md). |
 | API plumbing | Request ids, structured logs, one response/error envelope, Zod validation on every input. |
 | Expenses | Create shared (equal, exact, percentage or weighted split), personal (private to its creator) and on-behalf expenses. Retries are safe: an `Idempotency-Key` makes a double tap create exactly one expense. List with filters and cursor pagination, and detail by id. Every create writes the expense, its splits and an audit event in one transaction. See [ADR 004](docs/ADR/004-idempotency-strategy.md). |
-| Edit and reverse, settlements, balances endpoint, UI | Not built yet. |
+| Expense corrections | Edit (guarded by a version, so two simultaneous edits cannot overwrite each other), reverse (the row is kept and balances update), partial refunds shared back pro rata, disputes with a reason, and a per-expense history from the audit trail. Only the person who recorded an expense can edit or reverse it. See [ADR 006](docs/ADR/006-expense-lifecycle.md). |
+| Settlements, balances endpoint, UI | Not built yet. |
 
 ## How a request is handled
 
@@ -121,6 +122,21 @@ flowchart TD
     Tx --> Done["201 with the saved expense"]
 ```
 
+## Life of an expense
+
+An expense is never deleted. It changes status, and every change is written to the audit trail with who did it and why. Disputed expenses still count in balances; reversed ones do not.
+
+```mermaid
+stateDiagram-v2
+    [*] --> confirmed: recorded
+    confirmed --> confirmed: the recorder edits it
+    confirmed --> disputed: another member disputes it, with a reason
+    disputed --> confirmed: the disputer withdraws, or the recorder edits it
+    confirmed --> reversed: the recorder reverses it, with a reason
+    disputed --> reversed: the recorder reverses it
+    reversed --> [*]
+```
+
 ## Data model
 
 Every row that belongs to a household carries its `householdId`. Money is stored as integer paise.
@@ -160,6 +176,12 @@ erDiagram
 | POST | `/households/:householdId/expenses` | Record an expense (needs an `Idempotency-Key` header) |
 | GET | `/households/:householdId/expenses` | List expenses: filters `from`, `to`, `categoryId`, `paidById`, `type`, `status`, `q`; `limit` and `cursor` for pages |
 | GET | `/households/:householdId/expenses/:expenseId` | One expense with its splits (404 if it is someone else's personal expense) |
+| PATCH | `/households/:householdId/expenses/:expenseId` | Edit; send the whole expense plus the `version` you saw (409 if it changed) |
+| POST | `/households/:householdId/expenses/:expenseId/reverse` | Reverse with a reason (the person who recorded it) |
+| POST | `/households/:householdId/expenses/:expenseId/dispute` | Dispute with a reason (any other member) |
+| POST | `/households/:householdId/expenses/:expenseId/dispute/withdraw` | Withdraw a dispute (the person who raised it) |
+| POST | `/households/:householdId/expenses/:expenseId/refunds` | Record a partial or full refund (needs an `Idempotency-Key`) |
+| GET | `/households/:householdId/expenses/:expenseId/history` | Every change to the expense, who made it and why |
 
 `GET /health` and `GET /ready` are the liveness and database checks.
 
@@ -189,7 +211,7 @@ docs/     PRD, plan, ledger rules, security, ADRs, dev log
 - [Ledger](docs/LEDGER.md): formulas, algorithms, invariants
 - [Security](docs/SECURITY.md): what is enforced, known limits
 - [Folder structure](docs/FOLDER.md): layout, built and planned
-- [Decisions (ADRs)](docs/ADR): money representation, database, tenancy, cookie sessions
+- [Decisions (ADRs)](docs/ADR): money representation, database, tenancy, idempotency, cookie sessions, expense lifecycle
 - [Dev log](docs/DEVLOG.md): weekly progress
 
 ## Setup

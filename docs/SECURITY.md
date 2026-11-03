@@ -66,6 +66,19 @@ The authorization suite (`households/__tests__/authorization.db.test.js`) and th
 | Pagination | Cursors are opaque and carry no authority: the query still applies the household and visibility filters, so a forged cursor cannot reach data the caller could not already see. Page size is capped at 100. | `utils/cursor.js`, `expense.repository.js` |
 | Hidden fields | `requestHash` and `idempotencyKey` are never returned. | `expense.repository.js` |
 
+## Expense lifecycle (edit, reverse, refund, dispute)
+
+Decision record: [ADR 006](ADR/006-expense-lifecycle.md).
+
+| Area | What is enforced | Where |
+|---|---|---|
+| Who may change | Only the person who recorded an expense can edit or reverse it (`403` for another member, `404` for an outsider or for someone else's personal expense). Only another member can dispute it. Only the person who raised a dispute can withdraw it. | `expense.service.js` |
+| No lost updates | An edit needs the version the client last saw. Every change locks the expense row (`SELECT ... FOR UPDATE`) before deciding, so of two simultaneous edits exactly one wins and the other gets `409 STALE_VERSION`. Reverse, dispute and refund use the same lock. | `expense.repository.js` |
+| History is kept | Reversing marks the expense reversed; nothing is deleted. Edits keep the old content in the audit event's before snapshot. Every change writes an audit event with the actor, reason and request id, in the same transaction. | `expense.repository.js` |
+| Audit cannot be rewritten | There is no route that edits or deletes audit events, and the database trigger refuses it. | `GET .../history`, the guards migration |
+| Refund limits | A refund must be on a shared or on-behalf expense that is not reversed, and refunds together cannot exceed the original amount, even when two arrive at once. An expense with active refunds cannot be edited or reversed. | `createRefund` in `expense.repository.js` |
+| Safe repeats | Creating an expense or a refund needs an `Idempotency-Key`. Reversing twice, or withdrawing twice, changes nothing the second time. | `middlewares/idempotency.js` |
+
 ## Known limits
 
 - **Rate limits are per IP and in memory.** They reset on restart and are not shared between servers. Someone behind the same IP as you shares your allowance. Move to a shared store before running more than one instance.
@@ -79,12 +92,14 @@ The authorization suite (`households/__tests__/authorization.db.test.js`) and th
 - **Household changes are not written to the audit log** (it is for financial changes). Joins, leaves and ownership changes are visible only in the membership rows.
 - **Idempotency keys are kept forever** for now, and a retry returns the expense as currently stored (after edits exist, that is the edited version).
 - **Expense creation is not rate limited** yet, beyond the 100 kb body limit.
+- **If the person who recorded an expense leaves the household, nobody else can edit or reverse it.** Members can still dispute it.
+- **The history endpoint returns at most 200 events** and is not paged.
 - **Trust proxy is set to one hop in production.** Check the real hop count when deploying, or IP limits will see the proxy instead of the client.
 
 ## Not done yet
 
 - Removing another member (members can only leave), and emailing invitations (the owner copies the link).
-- Idempotency for settlements, and optimistic locking on edits (Phase 2.2 and 2.3).
+- Idempotency for settlements, and a runtime check that balances still sum to zero after every financial write (Phase 2.3).
 - Email verification and password reset.
 - CI. The real-database tests (races, token rotation) run locally against a separate Neon test branch, but nothing runs them automatically on a push.
 - Dependency auditing and a full review against the threat model (Part 7).
