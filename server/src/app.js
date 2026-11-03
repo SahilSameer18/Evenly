@@ -8,6 +8,7 @@ import requestLogger from "./middlewares/requestLogger.js";
 import { notFound, errorHandler } from "./middlewares/errorHandler.js";
 import authRoutes from "./modules/auth/auth.routes.js";
 import usersRoutes from "./modules/users/users.routes.js";
+import householdRoutes from "./modules/households/household.routes.js";
 
 const app = express();
 
@@ -35,6 +36,7 @@ app.get("/ready", async (req, res) => {
 
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/users", usersRoutes);
+app.use("/api/v1/households", householdRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

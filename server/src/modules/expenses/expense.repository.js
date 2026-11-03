@@ -1,10 +1,5 @@
 import prisma from "../../lib/prisma.js";
-
-// Tenant rule: every function takes householdId first and cannot run without it.
-function scoped(householdId) {
-  if (typeof householdId !== "string" || !householdId) throw new Error("householdId is required");
-  return householdId;
-}
+import { scoped } from "../../lib/tenant.js";
 
 export function findExpenseById(householdId, id) {
   return prisma.expense.findFirst({ where: { id, householdId: scoped(householdId) }, include: { splits: true } });
