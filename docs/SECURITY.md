@@ -53,5 +53,5 @@ What is enforced today and where. This version covers authentication and the dat
 - Single-use invitation links.
 - Idempotency keys, and optimistic locking on edits (Part 2).
 - Email verification and password reset.
-- The tests against a real database (they exist but are skipped until `TEST_DATABASE_URL` is set), and CI.
+- CI. The real-database tests (races, token rotation) run locally against a separate Neon test branch, but nothing runs them automatically on a push.
 - Dependency auditing and a full review against the threat model (Part 7).
