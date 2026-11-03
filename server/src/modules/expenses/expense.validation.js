@@ -38,11 +38,29 @@ const split = z.discriminatedUnion("method", [
 // shared:    split between members however `split` says. The payer need not be one of them.
 // personal:  only the payer's own; no split, no payer field. Never counts in household balances.
 // on_behalf: the payer covered something for one other member, who owes 100%.
-export const createExpenseBody = z.discriminatedUnion("type", [
-  z.strictObject({ type: z.literal("shared"), paidById: id.optional(), split, ...common }),
-  z.strictObject({ type: z.literal("on_behalf"), paidById: id.optional(), beneficiaryId: id, ...common }),
-  z.strictObject({ type: z.literal("personal"), ...common }),
+// A refund is not created here: it has its own endpoint, tied to the expense it gives money back on.
+const sharedBody = z.strictObject({ type: z.literal("shared"), paidById: id.optional(), split, ...common });
+const onBehalfBody = z.strictObject({ type: z.literal("on_behalf"), paidById: id.optional(), beneficiaryId: id, ...common });
+const personalBody = z.strictObject({ type: z.literal("personal"), ...common });
+
+export const createExpenseBody = z.discriminatedUnion("type", [sharedBody, onBehalfBody, personalBody]);
+
+// An edit sends the whole expense again, plus the version the client last saw (optimistic locking).
+const version = z.number().int().min(1);
+export const updateExpenseBody = z.discriminatedUnion("type", [
+  sharedBody.extend({ version }),
+  onBehalfBody.extend({ version }),
+  personalBody.extend({ version }),
 ]);
+
+// Used by both reverse and dispute: the person must say why.
+export const reasonBody = z.strictObject({ reason: z.string().trim().min(1, "Required").max(300) });
+
+export const refundBody = z.strictObject({
+  amountMinor: common.amountMinor,
+  notes: common.notes,
+  occurredAt: common.occurredAt,
+});
 
 const isoDateTime = z.iso.datetime({ offset: true }).transform((s) => new Date(s));
 
@@ -51,7 +69,7 @@ export const listExpensesQuery = z.strictObject({
   to: isoDateTime.optional(),
   categoryId: id.optional(),
   paidById: id.optional(),
-  type: z.enum(["shared", "personal", "on_behalf"]).optional(),
+  type: z.enum(["shared", "personal", "on_behalf", "refund"]).optional(),
   status: z.enum(["confirmed", "disputed", "reversed"]).optional(),
   q: z.string().trim().min(1).max(100).optional(),
   limit: z.coerce.number().int().min(1).max(100).default(25),

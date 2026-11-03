@@ -91,7 +91,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)("POST /api/v1/households/:househ
     it("has the documented shape and never exposes the idempotency fields", async () => {
       const { expense } = (await post(alice, shared({ notes: "  weekly shop ", occurredAt: "2026-10-30T14:20:00+05:30" }))).body.data;
       expect(Object.keys(expense).sort()).toEqual(
-        ["amountMinor", "categoryId", "createdAt", "createdById", "description", "householdId", "id", "notes", "occurredAt", "paidById", "splitMethod", "splits", "status", "type", "version"],
+        ["amountMinor", "categoryId", "createdAt", "createdById", "description", "householdId", "id", "notes", "occurredAt", "paidById", "refundOfId", "splitMethod", "splits", "status", "type", "version"],
       );
       expect(expense).toMatchObject({ notes: "weekly shop", occurredAt: "2026-10-30T08:50:00.000Z", householdId: household.id });
     });

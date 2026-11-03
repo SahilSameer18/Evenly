@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { signAccessToken } from "../lib/tokens.js";
+import { calculateMemberBalances } from "../ledger/index.js";
 import { testDb } from "./db-helper.js";
 
 // Real rows in the test database. Users get an access token directly, so tests skip the slow password hashing.
@@ -33,6 +34,25 @@ export function addExpense(household, payer, amountMinor, shares, type = "shared
       ...extra, // description, occurredAt, categoryId, notes, status, idempotencyKey, requestHash
       splits: { create: Object.entries(shares).map(([userId, shareMinor]) => ({ householdId: household.id, userId, shareMinor })) },
     },
+  });
+}
+
+/** Net balances worked out by the real ledger from the stored rows, so tests check what a user would see. */
+export async function balancesOf(household, users) {
+  const [expenses, settlements] = await Promise.all([
+    testDb.expense.findMany({ where: { householdId: household.id }, include: { splits: true } }),
+    testDb.settlement.findMany({ where: { householdId: household.id } }),
+  ]);
+  return calculateMemberBalances({
+    memberIds: users.map((u) => u.id),
+    expenses: expenses.map((e) => ({
+      paidBy: e.paidById,
+      amountMinor: e.amountMinor,
+      type: e.type,
+      status: e.status,
+      splits: e.splits.map((s) => ({ userId: s.userId, shareMinor: s.shareMinor })),
+    })),
+    settlements: settlements.map((t) => ({ fromUserId: t.fromUserId, toUserId: t.toUserId, amountMinor: t.amountMinor, status: t.status })),
   });
 }
 

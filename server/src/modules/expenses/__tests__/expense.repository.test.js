@@ -11,16 +11,22 @@ describe("expense repository tenant scoping", () => {
     expect(scopedFunctions.map(([name]) => name).sort()).toEqual([
       "categoryExists",
       "createExpense",
+      "createRefund",
+      "disputeExpense",
       "findExpenseById",
       "listActiveMemberIds",
       "listExpenses",
+      "listHistory",
+      "reverseExpense",
+      "updateExpense",
+      "withdrawDispute",
     ]);
   });
 
   // A new function must either require a householdId or be added to UNSCOPED on purpose.
   it.each(scopedFunctions)("%s refuses to run without a householdId", (name, fn) => {
     for (const bad of [undefined, null, ""]) {
-      expect(() => fn(bad, "x", "y")).toThrow("householdId is required");
+      expect(() => fn(bad, "x", "y", {})).toThrow("householdId is required");
     }
   });
 });

@@ -1,6 +1,7 @@
 import { LedgerError } from "./errors.js";
 
 // Disputed expenses still count (household default); reversed ones never do.
+// A reversed refund is ignored too, which gives the refunded amount back to the original expense.
 const COUNTED_STATUS = new Set(["confirmed", "disputed"]);
 
 /**
@@ -26,8 +27,11 @@ export function calculateMemberBalances({ expenses, settlements, memberIds }) {
     if (!Number.isSafeInteger(e.amountMinor) || shareTotal !== e.amountMinor) {
       throw new LedgerError("SPLIT_MISMATCH", "Expense shares do not add up to its amount");
     }
-    net[member(e.paidBy)] += e.amountMinor;
-    for (const s of e.splits) net[member(s.userId)] -= s.shareMinor;
+    // A refund is stored with positive numbers like any expense, and counts the other way:
+    // the payer got money back (paid less) and each person owes less (a smaller share).
+    const sign = e.type === "refund" ? -1 : 1;
+    net[member(e.paidBy)] += sign * e.amountMinor;
+    for (const s of e.splits) net[member(s.userId)] -= sign * s.shareMinor;
   }
 
   for (const t of settlements) {

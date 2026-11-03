@@ -34,6 +34,7 @@ enum ExpenseType {
   shared
   personal
   on_behalf
+  refund // money coming back on an earlier expense; stored positive, the ledger subtracts it
 }
 
 enum ExpenseStatus {
@@ -174,6 +175,7 @@ model Expense {
   version        Int           @default(1)
   occurredAt     DateTime
   reversalOfId   String?
+  refundOfId     String? // set on a refund: the expense it gives money back on
   idempotencyKey String?
   requestHash    String? // SHA-256 of the cleaned create request; tells a retry apart from a reused key
   createdAt      DateTime      @default(now())
@@ -185,11 +187,14 @@ model Expense {
   category   Category?      @relation(fields: [categoryId], references: [id])
   reversalOf Expense?       @relation("ExpenseReversal", fields: [reversalOfId], references: [id])
   reversals  Expense[]      @relation("ExpenseReversal")
+  refundOf   Expense?       @relation("ExpenseRefund", fields: [refundOfId], references: [id])
+  refunds    Expense[]      @relation("ExpenseRefund")
   splits     ExpenseSplit[]
 
   @@unique([createdById, idempotencyKey])
   @@index([householdId, occurredAt(sort: Desc)])
   @@index([householdId, status, occurredAt(sort: Desc)])
+  @@index([refundOfId])
 }
 
 model ExpenseSplit {
