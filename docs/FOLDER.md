@@ -31,7 +31,7 @@ Evenly/
 │   ├── package.json                         # "type": "module", dependencies & scripts
 │   ├── jsconfig.json                        # tsc --checkJs config for JSDoc type checking
 │   ├── eslint.config.js                     # ESLint flat config + restricted imports on ledger/
-│   ├── vitest.config.js                     # Runs src/test/setup.js first; one worker, one test file at a time (they share one test DB)
+│   ├── vitest.config.js                     # Run lock (globalSetup) and src/test/setup.js; one worker, one test file at a time (they share one test DB)
 │   ├── prisma7.config.ts                    # Prisma 7 CLI configuration
 │   │
 │   ├── prisma/
@@ -140,10 +140,12 @@ Evenly/
 │       │       └── __tests__/               # Golden test set (Hinglish, ambiguous, adversarial)
 │       │
 │       └── test/                            # Integration testing infrastructure
+│           ├── globalSetup.js               # Once per run: advisory lock on the test DB, so two runs cannot collide
 │           ├── setup.js                     # Points the app at TEST_DATABASE_URL; test JWT secret
 │           ├── db-helper.js                 # resetDb() truncate helper; refuses to run on the dev database
 │           ├── fakeTokenStore.js            # In-memory RefreshToken table for tests that mock the repository
-│           └── factories.js                 # makeUser (with token), makeHousehold, addMember, addExpense, addRepayment
+│           ├── factories.js                 # makeWorld (whole cast in one SQL call), makeUser, makeHousehold, addMember, addExpense, addRepayment, balancesOf
+│           └── __tests__/                   # checks that makeWorld still matches the schema
 │
 └── client/                                  # Mobile-First React PWA (Vite + Tailwind)
     ├── .env

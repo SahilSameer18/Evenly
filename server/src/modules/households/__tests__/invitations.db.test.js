@@ -15,10 +15,11 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)("invitations: create and accept"
 
   beforeEach(async () => {
     await resetDb();
-    alice = await f.makeUser("Alice");
-    bob = await f.makeUser("Bob", "bob@example.com");
-    carol = await f.makeUser("Carol", "carol@example.com");
-    household = await f.makeHousehold(alice);
+    // alice owns the household; bob and carol start outside it and have fixed emails for the email-lock tests
+    ({ users: [alice, bob, carol], household } = await f.makeWorld(
+      ["Alice", { name: "Bob", email: "bob@example.com" }, { name: "Carol", email: "carol@example.com" }],
+      { members: 1 },
+    ));
   });
 
   const invite = (user, body, householdId = household.id) =>

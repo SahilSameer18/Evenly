@@ -15,11 +15,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)("POST /expenses/:expenseId/refun
 
   beforeEach(async () => {
     await resetDb();
-    alice = await f.makeUser("Alice");
-    bob = await f.makeUser("Bob");
-    carol = await f.makeUser("Carol");
-    household = await f.makeHousehold(alice);
-    await f.addMember(household, bob);
+    ({ users: [alice, bob, carol], household } = await f.makeWorld());
     original = await f.addExpense(household, alice, 100000, { [alice.id]: 50000, [bob.id]: 50000 });
   });
 

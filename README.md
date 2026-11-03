@@ -233,6 +233,7 @@ Fill in `server/.env`:
 | `JWT_ACCESS_SECRET` | 32+ random characters. Generate: `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"` |
 | `CLIENT_ORIGIN` | Optional, defaults to `http://localhost:5173` |
 | `TEST_DATABASE_URL` | Pooled string of a **separate** Neon branch, for tests only |
+| `TEST_DIRECT_URL` | Optional: direct string for that same test branch, used for the run lock (worked out from the line above if missing) |
 
 Create the tables and generate the Prisma client, then start the API:
 
@@ -254,7 +255,7 @@ cd server
 npm test
 ```
 
-Most tests need no database. The `*.db.test.js` tests (authorization, invitations, sessions and the end-to-end Part 1 gate) run against `TEST_DATABASE_URL`, are skipped without it, and wipe every table in that database, so it must be a separate Neon branch. Because they share that one database, Vitest runs on a single worker, one test file at a time.
+Most tests need no database. The `*.db.test.js` tests (authorization, invitations, sessions and the end-to-end Part 1 gate) run against `TEST_DATABASE_URL`, are skipped without it, and wipe every table in that database, so it must be a separate Neon branch. Because they share that one database, Vitest runs on a single worker, one test file at a time. A run also takes a lock on the test database for its whole duration, so starting a second `npm test` while one is running stops straight away with a clear message instead of wiping the first run's data. The remote database makes every query cost about 80 ms, so the shared test setup (`makeWorld` in `server/src/test/factories.js`) builds a whole household in one SQL statement.
 
 Create the test branch as a **schema-only** copy of your dev branch, then mark its migrations as applied:
 

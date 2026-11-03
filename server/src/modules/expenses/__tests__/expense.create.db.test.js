@@ -16,11 +16,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)("POST /api/v1/households/:househ
 
   beforeEach(async () => {
     await resetDb();
-    alice = await f.makeUser("Alice");
-    bob = await f.makeUser("Bob");
-    carol = await f.makeUser("Carol");
-    household = await f.makeHousehold(alice);
-    await f.addMember(household, bob);
+    ({ users: [alice, bob, carol], household } = await f.makeWorld());
   });
 
   // key === null sends no Idempotency-Key header at all.

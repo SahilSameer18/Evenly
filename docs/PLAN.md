@@ -44,7 +44,7 @@ Where the build differs from this plan
 - Tests live in `__tests__/` folders next to the code they test, not beside each file.
 - Folders are `middlewares/`, `lib/` and `utils/`, not `middleware/` and `shared/` (see FOLDER.md).
 - The React Compiler is enabled in the client.
-- There is no CI and no ESLint or JSDoc type check yet; tests run locally against a separate Neon test branch, one test file at a time.
+- There is no CI and no ESLint or JSDoc type check yet; tests run locally against a separate Neon test branch, one test file at a time, behind a run lock so two runs cannot collide. The full suite takes about 7 minutes because every query to the remote database costs about 80 ms.
 - Decisions made in 1.6: only the owner invites, invitations can be locked to one email, and an owner must transfer ownership before leaving.
 
 2. How to work (applies to every phase)

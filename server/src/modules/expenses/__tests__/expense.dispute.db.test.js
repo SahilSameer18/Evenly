@@ -14,13 +14,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)("disputes: POST /expenses/:expen
 
   beforeEach(async () => {
     await resetDb();
-    alice = await f.makeUser("Alice");
-    bob = await f.makeUser("Bob");
-    carol = await f.makeUser("Carol");
-    dave = await f.makeUser("Dave");
-    household = await f.makeHousehold(alice);
-    await f.addMember(household, bob);
-    await f.addMember(household, dave);
+    // alice owns it, bob and dave are members, carol is a stranger (members are the first three people)
+    ({ users: [alice, bob, dave, carol], household } = await f.makeWorld(["Alice", "Bob", "Dave", "Carol"], { members: 3 }));
   });
 
   const url = (id, suffix) => `/api/v1/households/${household.id}/expenses/${id}${suffix}`;

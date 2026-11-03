@@ -14,8 +14,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)("households: create, list, get",
 
   beforeEach(async () => {
     await resetDb();
-    alice = await f.makeUser("Alice");
-    bob = await f.makeUser("Bob");
+    [alice, bob] = await Promise.all([f.makeUser("Alice"), f.makeUser("Bob")]);
   });
 
   const create = (user, body) => request(app).post("/api/v1/households").set(f.bearer(user)).send(body);

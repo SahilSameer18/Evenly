@@ -36,7 +36,7 @@ What is enforced today and where. This version covers authentication and the dat
 | Secrets in responses | Only `auth.repository.js` can read `passwordHash`, through two named functions. Every other user read selects public fields only. | `auth.repository.js`, `users.repository.js` |
 | Tenant scoping | The expense and household repositories refuse to run without a `householdId`. A test checks every exported function and fails if a new one is not scoped (or deliberately listed as an exception). | `lib/tenant.js`, `expenses/expense.repository.js`, `households/household.repository.js` |
 | Secrets in config | `JWT_ACCESS_SECRET` (32 characters or more) and the database URLs are validated at startup. The server refuses to start without them. `.env` is not committed. | `src/config/env.js` |
-| Test safety | Tests are redirected to `TEST_DATABASE_URL`. The wipe helper refuses to run on the dev database. Tests run on one worker, one file at a time, because they share and wipe one database. | `src/test/`, `vitest.config.js` |
+| Test safety | Tests are redirected to `TEST_DATABASE_URL`. The wipe helper refuses to run on the dev database. Tests run on one worker, one file at a time, because they share and wipe one database. A test run holds a PostgreSQL advisory lock on the test database, so a second run is refused at once instead of corrupting the first. | `src/test/`, `src/test/globalSetup.js`, `vitest.config.js` |
 
 ## Tenancy (households)
 

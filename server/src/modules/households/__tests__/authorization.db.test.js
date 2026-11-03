@@ -15,11 +15,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)("household authorization", () =>
 
   beforeEach(async () => {
     await resetDb();
-    alice = await f.makeUser("Alice");
-    bob = await f.makeUser("Bob");
-    carol = await f.makeUser("Carol");
-    household = await f.makeHousehold(alice);
-    await f.addMember(household, bob);
+    ({ users: [alice, bob, carol], household } = await f.makeWorld());
   });
 
   const get = (user, path) => request(app).get(`/api/v1${path}`).set(f.bearer(user));

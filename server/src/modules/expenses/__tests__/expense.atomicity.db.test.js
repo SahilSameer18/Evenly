@@ -15,10 +15,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)("creating an expense is all or n
 
   beforeEach(async () => {
     await resetDb();
-    alice = await f.makeUser("Alice");
-    bob = await f.makeUser("Bob");
-    household = await f.makeHousehold(alice);
-    await f.addMember(household, bob);
+    ({ users: [alice, bob], household } = await f.makeWorld(["Alice", "Bob"]));
   });
 
   const expense = (overrides = {}) => ({

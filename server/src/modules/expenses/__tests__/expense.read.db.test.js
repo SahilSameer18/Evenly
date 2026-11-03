@@ -4,7 +4,9 @@ import request from "supertest";
 // Real database. Skipped without TEST_DATABASE_URL.
 describe.skipIf(!process.env.TEST_DATABASE_URL)("reading expenses: list and detail", () => {
   let app, resetDb, testDb, f;
-  let alice, bob, carol, household, elsewhere; // alice owns it, bob is a member, carol is a stranger with her own household
+  let alice, bob, carol, household; // alice owns it, bob is a member, carol is a stranger
+  // Carol's own household, built only by the tests that need it.
+  const elsewhere = () => f.makeHousehold(carol, "Carol's flat");
 
   beforeAll(async () => {
     ({ default: app } = await import("../../../app.js"));
@@ -14,12 +16,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)("reading expenses: list and deta
 
   beforeEach(async () => {
     await resetDb();
-    alice = await f.makeUser("Alice");
-    bob = await f.makeUser("Bob");
-    carol = await f.makeUser("Carol");
-    household = await f.makeHousehold(alice);
-    await f.addMember(household, bob);
-    elsewhere = await f.makeHousehold(carol, "Carol's flat");
+    ({ users: [alice, bob, carol], household } = await f.makeWorld());
   });
 
   const days = (n) => new Date(Date.now() - n * 86_400_000);
@@ -187,9 +184,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)("reading expenses: list and deta
     });
 
     it("returns 404 for another household's expense, even through your own household's URL", async () => {
-      const hers = await f.addExpense(elsewhere, carol, 800, { [carol.id]: 800 });
+      const other = await elsewhere();
+      const hers = await f.addExpense(other, carol, 800, { [carol.id]: 800 });
       expect((await detail(alice, hers.id)).status).toBe(404);
-      expect((await detail(carol, hers.id, elsewhere.id)).status).toBe(200);
+      expect((await detail(carol, hers.id, other.id)).status).toBe(200);
     });
   });
 
@@ -205,7 +203,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)("reading expenses: list and deta
     });
 
     it("a stranger sees nothing of another household by guessing its id", async () => {
-      expect((await list(bob, {}, elsewhere.id)).status).toBe(404);
+      expect((await list(bob, {}, (await elsewhere()).id)).status).toBe(404);
     });
 
     it("a member who left gets 404", async () => {

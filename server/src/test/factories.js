@@ -9,6 +9,44 @@ export async function makeUser(name = "User", email = `${name.toLowerCase()}-${r
   return { ...user, token: await signAccessToken(user.id) };
 }
 
+/**
+ * The usual cast in ONE database round trip (the remote test database makes every call cost about 80 ms,
+ * and a transaction about 400 ms, so building people one by one dominated the run time).
+ * people[0] owns a new household, the next (members - 1) people are active members of it, and anyone after
+ * that is a stranger. A person is "Name" or { name, email }. Returns { users, household }; each user carries a token.
+ * It writes with plain SQL, so the test in __tests__/factories.db.test.js fails if the schema drifts from it.
+ */
+export async function makeWorld(people = ["Alice", "Bob", "Carol"], { members = 2 } = {}) {
+  if (members < 1 || members > people.length) throw new Error("makeWorld: members must be between 1 and the number of people");
+  const users = people.map((p) => {
+    const { name, email } = typeof p === "string" ? { name: p } : p;
+    const id = randomUUID();
+    return { id, name, email: email ?? `${name.toLowerCase()}-${id.slice(0, 8)}@example.com`, passwordHash: "!test-no-login" };
+  });
+  const household = { id: randomUUID(), name: "Flat 302" };
+
+  const params = [];
+  const p = (value) => `$${params.push(value)}`;
+  const userRows = users.map((u) => `(${p(u.id)}, ${p(u.email)}, ${p(u.name)}, ${p(u.passwordHash)}, now())`).join(", ");
+  // joinedAt comes from this computer's clock, like every join the app makes. Letting the database stamp it
+  // would mix two clocks, and a small difference between them can put the owner "after" a later joiner.
+  const start = Date.now();
+  const memberRows = users
+    .slice(0, members)
+    .map((u, i) => `(${p(randomUUID())}, ${p(household.id)}, ${p(u.id)}, ${p(i === 0 ? "owner" : "member")}::"MemberRole", ${p(new Date(start + i))})`)
+    .join(", ");
+  // Data-modifying CTEs all run in one statement, and the foreign keys are checked when it ends.
+  await testDb.$executeRawUnsafe(
+    `WITH u AS (INSERT INTO "User" ("id", "email", "name", "passwordHash", "updatedAt") VALUES ${userRows}),
+          h AS (INSERT INTO "Household" ("id", "name") VALUES (${p(household.id)}, ${p(household.name)}))
+     INSERT INTO "HouseholdMember" ("id", "householdId", "userId", "role", "joinedAt") VALUES ${memberRows}`,
+    ...params,
+  );
+
+  const withTokens = await Promise.all(users.map(async (u) => ({ ...u, token: await signAccessToken(u.id) })));
+  return { users: withTokens, household };
+}
+
 export const bearer = (user) => ({ Authorization: `Bearer ${user.token}` });
 
 export function makeHousehold(owner, name = "Flat 302") {
