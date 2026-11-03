@@ -1,5 +1,6 @@
+import { calculateMemberBalances } from "../../ledger/index.js";
 import { hashToken, newOpaqueToken } from "../../lib/tokens.js";
-import { AppError, ConflictError, ForbiddenError } from "../../utils/errors.js";
+import { AppError, ConflictError, ForbiddenError, ValidationError } from "../../utils/errors.js";
 import * as repository from "./household.repository.js";
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -60,4 +61,51 @@ export async function acceptInvitation(userId, token) {
   if (result === "invalid") throw invalid();
   if (result === "already_member") throw new ConflictError("ALREADY_MEMBER", "You are already in this household");
   return getHousehold({ householdId: invitation.householdId, role: "member" });
+}
+
+export async function updateHousehold(membership, body) {
+  requireOwner(membership);
+  return present(await repository.updateHousehold(membership.householdId, body), membership.role);
+}
+
+export async function leave(membership, { newOwnerId }) {
+  const { householdId, userId, role } = membership;
+
+  // shortcut: loads the household's whole ledger; fine at household scale, revisit if ledgers grow large.
+  const { expenses, settlements, members } = await repository.loadLedger(householdId);
+  const net = calculateMemberBalances({
+    memberIds: members.map((m) => m.userId),
+    expenses: expenses.map((e) => ({
+      paidBy: e.paidById,
+      amountMinor: e.amountMinor,
+      type: e.type,
+      status: e.status,
+      splits: e.splits.map((s) => ({ userId: s.userId, shareMinor: s.shareMinor })),
+    })),
+    settlements: settlements.map((t) => ({
+      fromUserId: t.fromUserId,
+      toUserId: t.toUserId,
+      amountMinor: t.amountMinor,
+      status: t.status,
+    })),
+  });
+  if (net[userId] !== 0) throw new ConflictError("BALANCE_NOT_ZERO", "Settle up before leaving: your balance is not zero");
+
+  const others = members.filter((m) => m.status === "active" && m.userId !== userId);
+  const badOwner = (message) => new ValidationError([{ in: "body", field: "newOwnerId", message }]);
+  let archive = false;
+  if (role === "owner") {
+    if (others.length === 0) {
+      archive = true; // the last person out closes the household
+    } else if (!newOwnerId) {
+      throw new ConflictError("OWNERSHIP_TRANSFER_REQUIRED", "Choose a new owner before leaving");
+    } else if (!others.some((m) => m.userId === newOwnerId)) {
+      throw badOwner("Must be another active member");
+    }
+  } else if (newOwnerId) {
+    throw badOwner("Only the owner can name a new owner");
+  }
+
+  await repository.leaveHousehold(householdId, { userId, newOwnerId: role === "owner" ? newOwnerId : undefined, archive });
+  return { left: true, archived: archive };
 }

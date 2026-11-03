@@ -21,3 +21,11 @@ export async function invite(req, res) {
 export async function accept(req, res) {
   sendData(req, res, { household: await service.acceptInvitation(req.user.id, req.valid.body.token) });
 }
+
+export async function update(req, res) {
+  sendData(req, res, { household: await service.updateHousehold(req.membership, req.valid.body) });
+}
+
+export async function leave(req, res) {
+  sendData(req, res, await service.leave(req.membership, req.valid.body));
+}

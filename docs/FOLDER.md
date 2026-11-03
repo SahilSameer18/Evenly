@@ -30,7 +30,7 @@ Evenly/
 │   ├── package.json                         # "type": "module", dependencies & scripts
 │   ├── jsconfig.json                        # tsc --checkJs config for JSDoc type checking
 │   ├── eslint.config.js                     # ESLint flat config + restricted imports on ledger/
-│   ├── vitest.config.js                     # Runs src/test/setup.js first; test files run one at a time (shared test DB)
+│   ├── vitest.config.js                     # Runs src/test/setup.js first; one worker, one test file at a time (they share one test DB)
 │   ├── prisma7.config.ts                    # Prisma 7 CLI configuration
 │   │
 │   ├── prisma/
@@ -70,7 +70,7 @@ Evenly/
 │       ├── middlewares/                     # (built: requestLogger, errorHandler, validate, authenticate)
 │       │   ├── requestLogger.js             # Request id (X-Request-Id) + Pino HTTP logging, no headers logged
 │       │   ├── authenticate.js              # Access token verification & req.user attachment
-│       │   ├── householdMembership.js       # (planned) Scopes :householdId; returns 404 for non-members
+│       │   ├── householdMembership.js       # Scopes :householdId; returns 404 for non-members
 │       │   ├── validate.js                  # Zod validation middleware for body, params, query -> req.valid
 │       │   ├── idempotency.js               # (planned) Enforces Idempotency-Key & prevents double-writes
 │       │   ├── rateLimiter.js               # Rate limiting (built for auth; expenses and AI endpoints later)
@@ -81,6 +81,7 @@ Evenly/
 │       ├── lib/
 │       │   ├── prisma.js                    # PrismaClient singleton (Neon adapter)
 │       │   ├── logger.js                    # Base structured logger (Pino)
+│       │   ├── tenant.js                    # scoped(householdId): repositories cannot run without it
 │       │   ├── password.js                  # Argon2id hash / verify
 │       │   ├── tokens.js                    # Access JWT (jose) + opaque refresh token generation / hashing
 │       │   └── __tests__/
@@ -105,12 +106,12 @@ Evenly/
 │       │   │   └── __tests__/
 │       │   │
 │       │   ├── households/
-│       │   │   ├── household.routes.js
+│       │   │   ├── household.routes.js      # household router + invitationRouter (/invitations/accept)
 │       │   │   ├── household.controller.js
-│       │   │   ├── household.service.js     # Single-use invitation tokens (7-day expiry)
-│       │   │   ├── household.repository.js
+│       │   │   ├── household.service.js     # Roles, single-use invitations (7-day expiry), leave rules
+│       │   │   ├── household.repository.js  # Every scoped function starts with scoped(householdId)
 │       │   │   ├── household.validation.js
-│       │   │   └── __tests__/
+│       │   │   └── __tests__/               # repository scoping, create/list/get, settings, invitations, leave, authorization suite
 │       │   │
 │       │   ├── expenses/
 │       │   │   ├── expense.routes.js
@@ -139,7 +140,7 @@ Evenly/
 │           ├── setup.js                     # Points the app at TEST_DATABASE_URL; test JWT secret
 │           ├── db-helper.js                 # resetDb() truncate helper; refuses to run on the dev database
 │           ├── fakeTokenStore.js            # In-memory RefreshToken table for tests that mock the repository
-│           └── factories.js                 # User, Household, Expense test object factories
+│           └── factories.js                 # makeUser (with token), makeHousehold, addMember, addExpense, addRepayment
 │
 └── client/                                  # Mobile-First React PWA (Vite + Tailwind)
     ├── .env

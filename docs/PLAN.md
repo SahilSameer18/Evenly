@@ -25,6 +25,26 @@ Part	Goal	Phases	Weeks (12-16 h/week)	Detail
 8	Extras and growth	4	later	Outline
 MVP = Parts 1 + 2. Launch at the end of Part 2, then use it for real for two weeks before Part 3. Plan Parts 5-8 properly only after launch.
 
+Progress (updated 2026-11-03)
+Phase	State	Notes
+0	Done enough	Repo, Neon (dev branch and a separate schema-only test branch), PRD, ADRs.
+1.1	Partly done	Repo, Express skeleton, Zod env, Vitest, client scaffold are done. ESLint/Prettier, the lint-staged hook, the ledger import rule, the tsc typecheck and GitHub Actions CI were skipped by choice.
+1.2	Done	One split rule with a hash tie-break (see ADR 001), not a userId tie-break.
+1.3	Done except two items	All vectors and the 10,000-run property tests pass. Not done: JSDoc typedefs (1.3.1), the 100% branch-coverage gate and the ledger-v0.1 tag (1.3.9).
+1.4	Done	Schema, CHECK and trigger guards, seed, test-database helper, tenant-scoped repository (checked by a test instead of a lint rule).
+1.5	Done	All 14 sub-phases, SECURITY.md v1, ADR 005. Rate limits are in memory.
+1.6	Done	Households, membership middleware with the 404 rule, owner-only settings, single-use invitations, leave with balance check and ownership transfer, authorization suite, end-to-end gate test, SECURITY.md tenancy section, ADR 003.
+Part 1 gate	Met, with three gaps	Two real users sign up, share a household and a third gets 404 on everything (tested end to end against a real database). Gaps: the ledger is not tagged ledger-v0.1, there is no CI (by choice), and branch coverage is not measured.
+2 and later	Not started	Next: expense create and read API with idempotency keys (2.1).
+
+Where the build differs from this plan
+- Leftover paise are given by a hash of the expense id and user id, not by userId order (ADR 001).
+- Tests live in `__tests__/` folders next to the code they test, not beside each file.
+- Folders are `middlewares/`, `lib/` and `utils/`, not `middleware/` and `shared/` (see FOLDER.md).
+- The React Compiler is enabled in the client.
+- There is no CI and no ESLint or JSDoc type check yet; tests run locally against a separate Neon test branch, one test file at a time.
+- Decisions made in 1.6: only the owner invites, invitations can be locked to one email, and an owner must transfer ownership before leaving.
+
 2. How to work (applies to every phase)
 One phase = one Git branch = one pull request (even if you merge it yourself). Merge only when CI is green.
 Sub-phase size: about 1-3 hours, one clear outcome. If one grows past a half-day, split it.

@@ -91,3 +91,32 @@ export function acceptInvitation(householdId, invitationId, userId) {
     return "joined";
   });
 }
+
+export function updateHousehold(householdId, data) {
+  return prisma.household.update({ where: { id: scoped(householdId) }, data, select: HOUSEHOLD });
+}
+
+// Everything the balance check needs: all records, and every member ever (left members still own history).
+export function loadLedger(householdId) {
+  scoped(householdId);
+  return Promise.all([
+    prisma.expense.findMany({ where: { householdId }, include: { splits: true } }),
+    prisma.settlement.findMany({ where: { householdId } }),
+    prisma.householdMember.findMany({ where: { householdId }, select: { userId: true, status: true } }),
+  ]).then(([expenses, settlements, members]) => ({ expenses, settlements, members }));
+}
+
+// New owner (if any), the leaver marked left, and the optional archive: all or nothing.
+export function leaveHousehold(householdId, { userId, newOwnerId, archive }) {
+  scoped(householdId);
+  return prisma.$transaction(async (tx) => {
+    if (newOwnerId) {
+      await tx.householdMember.update({ where: { householdId_userId: { householdId, userId: newOwnerId } }, data: { role: "owner" } });
+    }
+    await tx.householdMember.update({
+      where: { householdId_userId: { householdId, userId } },
+      data: { status: "left", leftAt: new Date(), role: "member" },
+    });
+    if (archive) await tx.household.update({ where: { id: householdId }, data: { archivedAt: new Date() } });
+  });
+}

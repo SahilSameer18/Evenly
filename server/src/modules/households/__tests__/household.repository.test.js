@@ -14,6 +14,9 @@ describe("household repository tenant scoping", () => {
       "createInvitation",
       "findActiveMembership",
       "getHousehold",
+      "leaveHousehold",
+      "loadLedger",
+      "updateHousehold",
     ]);
   });
 

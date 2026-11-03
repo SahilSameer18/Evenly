@@ -22,8 +22,19 @@ export const inviteBody = z
 export const acceptBody = z.strictObject({ token: z.string().regex(/^[A-Za-z0-9_-]{20,128}$/, "Invalid invitation token") });
 
 // Currency is deliberately absent: INR only for now, and strictObject rejects it if sent.
+const name = z.string().trim().min(1, "Required").max(80);
+const timezone = z.string().refine(validTimezone, "Use an IANA timezone such as Asia/Kolkata");
+const defaultSplitMethod = z.enum(["equal", "exact", "percentage", "weights"]);
+
 export const createHouseholdBody = z.strictObject({
-  name: z.string().trim().min(1, "Required").max(80),
-  timezone: z.string().refine(validTimezone, "Use an IANA timezone such as Asia/Kolkata").optional(),
-  defaultSplitMethod: z.enum(["equal", "exact", "percentage", "weights"]).optional(),
+  name,
+  timezone: timezone.optional(),
+  defaultSplitMethod: defaultSplitMethod.optional(),
 });
+
+export const updateHouseholdBody = z
+  .strictObject({ name: name.optional(), timezone: timezone.optional(), defaultSplitMethod: defaultSplitMethod.optional() })
+  .refine((b) => Object.values(b).some((v) => v !== undefined), "Provide at least one field to change");
+
+// The body is optional: only an owner with other members needs to name a successor.
+export const leaveBody = z.strictObject({ newOwnerId: z.string().min(1).max(64).optional() }).default({});
