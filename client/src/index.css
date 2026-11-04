@@ -9,6 +9,7 @@
   --bg: #0f0d0c;
   --panel: rgb(255 255 255 / 0.07);
   --panel-edge: rgb(255 255 255 / 0.12);
+  --menu: #231e1a; /* solid: the open list of a dropdown cannot be see-through */
   --ink: #f5f1ec;
   --ink-2: #b8afa6;
   --hero: rgb(255 255 255 / 0.07);
@@ -35,6 +36,7 @@
     --bg: #f4eee6;
     --panel: #ffffff;
     --panel-edge: #e3dad0;
+    --menu: #ffffff;
     --ink: #1a1613;
     --ink-2: #6b6158;
     --hero: #1a1613;
@@ -52,6 +54,7 @@
   --bg: #f4eee6;
   --panel: #ffffff;
   --panel-edge: #e3dad0;
+  --menu: #ffffff;
   --ink: #1a1613;
   --ink-2: #6b6158;
   --hero: #1a1613;
@@ -116,6 +119,12 @@ body {
   :root:not([data-theme="dark"]) body::before {
     display: none;
   }
+}
+
+/* The open list of a dropdown is drawn by the browser: give it a solid background and readable text. */
+select option {
+  background-color: var(--menu);
+  color: var(--ink);
 }
 
 .num {
