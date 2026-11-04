@@ -1,1 +1,124 @@
 @import "tailwindcss";
+@import "@fontsource/syne/latin-500.css";
+@import "@fontsource/plus-jakarta-sans/latin-400.css";
+@import "@fontsource/plus-jakarta-sans/latin-500.css";
+
+/* Colours are named by role (docs/DESIGN.md). Dark is the default; the system light setting and
+   data-theme="light" switch to paper, data-theme="dark" forces dark. */
+:root {
+  --bg: #0f0d0c;
+  --panel: rgb(255 255 255 / 0.07);
+  --panel-edge: rgb(255 255 255 / 0.12);
+  --ink: #f5f1ec;
+  --ink-2: #b8afa6;
+  --hero: rgb(255 255 255 / 0.07);
+  --owed: #d8f04a;
+  --owed-fill: #d8f04a;
+  --owe: #ff8f5c;
+  --pending: #ffb547;
+  --pending-bg: rgb(255 181 71 / 0.12);
+  --action: #f5f1ec;
+  --on-action: #1a1613;
+  --on-owed: #1a1613;
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #f4eee6;
+    --panel: #ffffff;
+    --panel-edge: #e3dad0;
+    --ink: #1a1613;
+    --ink-2: #6b6158;
+    --hero: #1a1613;
+    --owed: #4f6b00;
+    --owe: #b53a0b;
+    --pending: #7a4b00;
+    --pending-bg: #fbe9c2;
+    --action: #1a1613;
+    --on-action: #f5f1ec;
+    color-scheme: light;
+  }
+}
+
+:root[data-theme="light"] {
+  --bg: #f4eee6;
+  --panel: #ffffff;
+  --panel-edge: #e3dad0;
+  --ink: #1a1613;
+  --ink-2: #6b6158;
+  --hero: #1a1613;
+  --owed: #4f6b00;
+  --owe: #b53a0b;
+  --pending: #7a4b00;
+  --pending-bg: #fbe9c2;
+  --action: #1a1613;
+  --on-action: #f5f1ec;
+  color-scheme: light;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-edge: var(--panel-edge);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-hero: var(--hero);
+  --color-owed: var(--owed);
+  --color-owed-fill: var(--owed-fill);
+  --color-owe: var(--owe);
+  --color-pending: var(--pending);
+  --color-pending-bg: var(--pending-bg);
+  --color-action: var(--action);
+  --color-on-action: var(--on-action);
+  --color-on-owed: var(--on-owed);
+  --font-display: "Syne", system-ui, sans-serif;
+  --font-sans: "Plus Jakarta Sans", system-ui, sans-serif;
+}
+
+html {
+  background: var(--bg);
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
+}
+
+/* The one static background glow: painted once on its own layer, dark theme only. */
+:root:not([data-theme="light"]) body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(120% 60% at 0% 0%, #4a3a30 0%, #241e1a 40%, transparent 75%);
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) body::before {
+    display: none;
+  }
+}
+
+.num {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--owed);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
