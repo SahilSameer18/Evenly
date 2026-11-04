@@ -144,6 +144,10 @@ Budgets, measured before the MVP gate: initial JavaScript under 150 KB gzipped, 
 - Icon-only buttons have an accessible name.
 - Screen readers read amounts as words ("1,250 rupees, you lent").
 
+## Sign-in and sign-up card (`/login` and `/register`)
+
+One card shared by both addresses (it stays mounted, so the animation can play). On wide screens (768 px and up) it has two halves: a form and a strongly contrasting panel (cream in the dark theme, dark in the light theme). Pressing "Create an account" or "Log in" slides the panel (transform only, 500 ms, one-shot) to the other half and reveals the other form; the inactive form is `inert`, and focus moves to the first field of the form that appears. On phones the active form is shown on its own and pops in, with a switch link below. The panel carries the example balance card, three true points (whole paise, private personal expenses, every change recorded) and the switch button. Fields have a visible edge (`ink-2` at 40%), a leading icon, a placeholder, and the password field has a show/hide button; the register form has a live "8 or more characters" hint that becomes "Good" with a tick. No social sign-in and no "forgot password" (Evenly has neither; nothing is faked). The invitation and household-setup screens still use the single-panel layout.
+
 ## Landing page (the front door at `/` for signed-out visitors)
 
 One static, lazy-loaded page in the same look: header, hero with a sample balance card (tagged "Example"), how it works in three steps, six features, "Numbers you can check" with a worked ₹100.01 split, four questions (native `<details>`, no JavaScript), a closing call to action, and a footer crediting the author. Content sits in a centred column of at most 1120 px. It uses no images, animation, API calls or third-party scripts. Rule for the copy: every claim must be true of the product today. Repayments are built on the server but their screens are not, so both mentions carry a "Soon" tag: remove it when the Settle screen ships (phase 2.5). The Indian-rupees-only line must be revisited if other currencies are added.
