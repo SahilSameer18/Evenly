@@ -79,6 +79,22 @@ Decision record: [ADR 006](ADR/006-expense-lifecycle.md).
 | Refund limits | A refund must be on a shared or on-behalf expense that is not reversed, and refunds together cannot exceed the original amount, even when two arrive at once. An expense with active refunds cannot be edited or reversed. | `createRefund` in `expense.repository.js` |
 | Safe repeats | Creating an expense or a refund needs an `Idempotency-Key`. Reversing twice, or withdrawing twice, changes nothing the second time. | `middlewares/idempotency.js` |
 
+## Repayments and balances
+
+Decision record: [ADR 007](ADR/007-settlements-and-balances.md).
+
+| Area | What is enforced | Where |
+|---|---|---|
+| Who may do what | The sender is always the caller (the body cannot name a sender). Only the recipient can confirm or reject; only the sender can cancel (`403` otherwise, `404` for outsiders, other households and unknown ids). The recipient must be another active member. | `settlement.service.js`, `settlement.validation.js` |
+| Money only after agreement | A repayment is `pending` and changes no balance until the recipient confirms it. Finished repayments cannot be moved again (`409 SETTLEMENT_NOT_PENDING`); repeating the same move is a no-op. | `settlement.repository.js` |
+| No races | Confirm, reject and cancel lock the row first, so a confirm racing a cancel has exactly one winner and one audit event. | `transitionSettlement` |
+| Safe retries | Creating a repayment needs an `Idempotency-Key`; same key and request returns the stored one, a different request is `422`, two at once make one row. | `settlement.service.js`, unique `(createdById, idempotencyKey)` |
+| Audited | `settlement.created`, `.confirmed`, `.rejected`, `.cancelled` with actor, before and after, reason and request id, in the same transaction as the change. | `settlement.repository.js` |
+| Balances are derived | Never stored or accepted from a client. Others' personal expenses never appear in any view. | `balances/` module, `ledger/explain.js` |
+| Books checked | After money-changing writes the balances are recomputed; a ledger error is logged with the request id. The check never fails the request. | `balance.service.js` |
+| Leaving | A pending repayment blocks both sender and recipient from leaving (`409 HAS_PENDING_REPAYMENTS`), on top of the zero-balance rule. | `household.service.js` |
+| Hidden fields | `requestHash` and `idempotencyKey` are never returned. | `settlement.repository.js` |
+
 ## Known limits
 
 - **Rate limits are per IP and in memory.** They reset on restart and are not shared between servers. Someone behind the same IP as you shares your allowance. Move to a shared store before running more than one instance.
@@ -88,7 +104,8 @@ Decision record: [ADR 006](ADR/006-expense-lifecycle.md).
 - **`Secure` cookies are off outside production**, so plain `http://localhost` works.
 - **An open invitation link works for whoever holds it** unless it was locked to an email. Locking is optional; the owner chooses.
 - **Exactly one owner is enforced by the service**, inside the transaction, not by a database constraint.
-- **The leave check loads the household's whole ledger.** Fine at household scale; revisit if ledgers grow large.
+- **The leave check, every balance view and the runtime check load the household's whole ledger.** Fine at household scale; revisit if ledgers grow large.
+- **Pending repayments never expire**, and dispute and withdraw do not run the balance check (they change a flag, not a number).
 - **Household changes are not written to the audit log** (it is for financial changes). Joins, leaves and ownership changes are visible only in the membership rows.
 - **Idempotency keys are kept forever** for now, and a retry returns the expense as currently stored (after edits exist, that is the edited version).
 - **Expense creation is not rate limited** yet, beyond the 100 kb body limit.
@@ -99,7 +116,6 @@ Decision record: [ADR 006](ADR/006-expense-lifecycle.md).
 ## Not done yet
 
 - Removing another member (members can only leave), and emailing invitations (the owner copies the link).
-- Idempotency for settlements, and a runtime check that balances still sum to zero after every financial write (Phase 2.3).
 - Email verification and password reset.
 - CI. The real-database tests (races, token rotation) run locally against a separate Neon test branch, but nothing runs them automatically on a push.
 - Dependency auditing and a full review against the threat model (Part 7).

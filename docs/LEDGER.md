@@ -158,4 +158,11 @@ Ledger core first: if the maths is wrong, nothing else matters, and pure code is
 Database next: constraints turn rules into guarantees even if code changes later.
 Auth and households before expenses: tenancy must exist before data does; adding it later means rewriting every query.
 API before UI: the API tests prove the money flow; the UI is then only presentation.
-Launch, use it, then PWA, then AI: real use finds the problems no plan can; AI is the riskiest and least necessary, so it comes last.
+Launch, use it, then PWA, then AI: real use finds the problems no plan can; AI is the riskiest and least necessary, so it comes last.15. Repayments and the ledger view (Phase 2.3)
+A repayment is a claim until the person being paid agrees it arrived (ADR 007).
+pending → confirmed (recipient), rejected (recipient), cancelled (sender). Only confirmed repayments count in balances. Overpaying is allowed and flips the direction.
+Net = Paid − Share + Sent − Received, per member. GET /balances returns net plus those four parts, so every number can be explained.
+GET /ledger lists expenses, refunds and repayments oldest first (ties by id) with each member's running balance after each entry. Reversed expenses and unconfirmed repayments appear with counted: false and no change. Personal expenses never appear. The last running balance equals the net (explainLedger in server/src/ledger/explain.js, property-tested).
+GET /settlement-suggestions calls suggestSettlements on the confirmed balances. Advice only: nothing is stored, and following it (each repayment confirmed) clears every balance.
+Worked example, through the API: Alice pays 2000 and 600, Bob pays 1200 and 800, all split equally → Alice +300, Bob −300 rupees (30000 paise). A pending repayment changes nothing; confirming 200 gives +100 / −100; 400 flips to −100 / +100.
+Runtime check (section 12, last step): after each money-changing write the books are recomputed; a failure is logged with the request id and never fails the request.

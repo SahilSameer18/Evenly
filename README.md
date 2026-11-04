@@ -26,7 +26,8 @@ Shared-expense tracker for roommates. Every balance is computed from recorded tr
 | API plumbing | Request ids, structured logs, one response/error envelope, Zod validation on every input. |
 | Expenses | Create shared (equal, exact, percentage or weighted split), personal (private to its creator) and on-behalf expenses. Retries are safe: an `Idempotency-Key` makes a double tap create exactly one expense. List with filters and cursor pagination, and detail by id. Every create writes the expense, its splits and an audit event in one transaction. See [ADR 004](docs/ADR/004-idempotency-strategy.md). |
 | Expense corrections | Edit (guarded by a version, so two simultaneous edits cannot overwrite each other), reverse (the row is kept and balances update), partial refunds shared back pro rata, disputes with a reason, and a per-expense history from the audit trail. Only the person who recorded an expense can edit or reverse it. See [ADR 006](docs/ADR/006-expense-lifecycle.md). |
-| Settlements, balances endpoint, UI | Not built yet. |
+| Repayments and balances | Record a repayment (pending until the person being paid confirms it; they can also reject it, and the sender can cancel). Balances, a chronological ledger with every member's running balance, and settlement suggestions are all computed from the stored records, never stored. Creating an expense or confirming a repayment returns `balanceAfter`, and the books are re-checked after every money-changing write. Leaving is blocked while a repayment is pending. See [ADR 007](docs/ADR/007-settlements-and-balances.md). |
+| UI | Not built yet. |
 
 ## How a request is handled
 
@@ -137,6 +138,23 @@ stateDiagram-v2
     reversed --> [*]
 ```
 
+## Life of a repayment
+
+A repayment moves no money in the app; it is a claim until the person being paid agrees it arrived. Only confirmed repayments change balances.
+
+```mermaid
+stateDiagram-v2
+    [*] --> pending: sender records it
+    pending --> confirmed: recipient confirms
+    pending --> rejected: recipient rejects
+    pending --> cancelled: sender cancels
+    confirmed --> [*]
+    rejected --> [*]
+    cancelled --> [*]
+```
+
+Worked example through the API: Alice pays 2000 and 600 and Bob pays 1200 and 800 (all shared equally), so Alice is owed ₹300 and Bob owes ₹300 (`30000` paise). A pending repayment changes nothing. When Alice confirms Bob's ₹200 it becomes ₹100 / −₹100. Paying ₹400 instead flips it to −₹100 / ₹100.
+
 ## Data model
 
 Every row that belongs to a household carries its `householdId`. Money is stored as integer paise.
@@ -182,6 +200,15 @@ erDiagram
 | POST | `/households/:householdId/expenses/:expenseId/dispute/withdraw` | Withdraw a dispute (the person who raised it) |
 | POST | `/households/:householdId/expenses/:expenseId/refunds` | Record a partial or full refund (needs an `Idempotency-Key`) |
 | GET | `/households/:householdId/expenses/:expenseId/history` | Every change to the expense, who made it and why |
+| POST | `/households/:householdId/settlements` | Record a repayment to another member (needs an `Idempotency-Key`); starts pending |
+| GET | `/households/:householdId/settlements` | Repayment history: filter `status`; `limit` and `cursor` for pages |
+| GET | `/households/:householdId/settlements/:settlementId` | One repayment |
+| POST | `/households/:householdId/settlements/:settlementId/confirm` | Confirm (the person being paid); returns `balanceAfter` |
+| POST | `/households/:householdId/settlements/:settlementId/reject` | Reject with an optional reason (the person being paid) |
+| POST | `/households/:householdId/settlements/:settlementId/cancel` | Cancel while pending (the sender) |
+| GET | `/households/:householdId/balances` | Each member's net balance and its parts (paid, share, sent, received) |
+| GET | `/households/:householdId/ledger` | Every entry oldest first with each member's running balance |
+| GET | `/households/:householdId/settlement-suggestions` | Who should pay whom to clear everything (advice only) |
 
 `GET /health` and `GET /ready` are the liveness and database checks.
 

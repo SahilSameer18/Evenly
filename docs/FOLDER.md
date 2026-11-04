@@ -16,7 +16,8 @@ Evenly/
 │       ├── 003-tenancy-and-authz.md         # householdId scoping & the 404 security rule
 │       ├── 004-idempotency-strategy.md      # Idempotency-Key header & unique DB constraints
 │       ├── 005-cookie-session-auth.md       # Rotating refresh tokens in HTTP-only cookies
-│       └── 006-expense-lifecycle.md         # Edit / reverse / refund / dispute: locking, creator-only, positive refunds
+│       ├── 006-expense-lifecycle.md         # Edit / reverse / refund / dispute: locking, creator-only, positive refunds
+│       └── 007-settlements-and-balances.md  # Repayments pending until confirmed; derived balances; runtime check
 │
 ├── e2e/                                     # Playwright end-to-end test suite
 │   ├── package.json
@@ -127,9 +128,15 @@ Evenly/
 │       │   ├── settlements/
 │       │   │   ├── settlement.routes.js
 │       │   │   ├── settlement.controller.js
-│       │   │   ├── settlement.service.js    # Repayment confirmation lifecycle & runtime check
-│       │   │   ├── settlement.repository.js
+│       │   │   ├── settlement.service.js    # (built) Idempotent create; confirm / reject (recipient), cancel (sender)
+│       │   │   ├── settlement.repository.js # (built) Tenant-scoped; row lock before every status change; audit in the same transaction
 │       │   │   ├── settlement.validation.js
+│       │   │   └── __tests__/
+│       │   │
+│       │   ├── balances/                    # (built) Read-only views worked out by the ledger; nothing is stored
+│       │   │   ├── balance.controller.js    # /balances, /ledger, /settlement-suggestions
+│       │   │   ├── balance.service.js       # Rows -> ledger input; the runtime reconciliation check
+│       │   │   ├── balance.repository.js    # loadLedger(householdId)
 │       │   │   └── __tests__/
 │       │   │
 │       │   └── ai/                          # Part 4 (AI Behind a Strict Trust Boundary)

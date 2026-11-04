@@ -37,9 +37,11 @@ Phase	State	Notes
 Part 1 gate	Met, with three gaps	Two real users sign up, share a household and a third gets 404 on everything (tested end to end against a real database). Gaps: the ledger is not tagged ledger-v0.1, there is no CI (by choice), and branch coverage is not measured.
 2.1	Done	Expense create and read API: four split methods, personal and on-behalf types, idempotency keys, one-transaction writes with an audit event, filters and cursor pagination, private personal expenses (ADR 004).
 2.2	Done	Edit with optimistic locking, reverse, refund (new refund type, positive amounts), dispute, history; every change locks the row and writes an audit event (ADR 006).
-2.3 onward	Not started	Next: settlements and balances (2.3), then the frontend (2.4 and 2.5).
+2.3	Done	Repayments (pending until the recipient confirms; reject, cancel), balances, ledger with running balances, settlement suggestions, balanceAfter, runtime reconciliation, leave blocked by pending repayments (ADR 007). The blueprint's worked example (+300 / -300) reproduces through the API.
+2.4 onward	Not started	Next: the frontend (2.4 and 2.5), then deploy (2.6).
 
 Where the build differs from this plan
+- 2.3: refund responses also carry balanceAfter; dispute and withdraw skip the reconciliation check (they change no number); pending repayments cannot be edited, only cancelled; any amount is allowed; a pending repayment blocks leaving.
 - Leftover paise are given by a hash of the expense id and user id, not by userId order (ADR 001).
 - Tests live in `__tests__/` folders next to the code they test, not beside each file.
 - Folders are `middlewares/`, `lib/` and `utils/`, not `middleware/` and `shared/` (see FOLDER.md).
