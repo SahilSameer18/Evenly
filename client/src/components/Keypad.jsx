@@ -14,7 +14,7 @@ export function Keypad({ value, onChange }) {
           type="button"
           aria-label={LABEL[key] ?? key}
           onClick={() => onChange(pressKey(value, key))}
-          className="num inline-flex min-h-12 items-center justify-center rounded-2xl border border-edge bg-panel text-xl active:opacity-70 landscape:max-md:min-h-11"
+          className="num inline-flex min-h-12 items-center justify-center rounded-2xl border border-edge bg-panel text-xl transition-transform duration-100 active:scale-95 landscape:max-md:min-h-11"
         >
           {key === 'back' ? <Icon name="backspace" /> : key}
         </button>

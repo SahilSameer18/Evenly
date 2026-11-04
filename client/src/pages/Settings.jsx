@@ -8,6 +8,7 @@ import { Icon } from '../components/Icon.jsx'
 import { Avatar, Panel, Skeleton } from '../components/Panel.jsx'
 import { ErrorState } from '../components/States.jsx'
 import { useToast } from '../components/toast.js'
+import { stagger } from '../lib/motion.js'
 import { getTheme, setTheme } from '../lib/theme.js'
 
 function Members({ householdId }) {
@@ -81,21 +82,21 @@ export default function Settings() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="num text-2xl">Settings</h1>
+      <h1 className="enter-fade num text-2xl">Settings</h1>
 
-      <Panel className="flex flex-col gap-3">
+      <Panel style={stagger(0)} className="enter flex flex-col gap-3">
         <h2 className="num text-lg">{household.name}</h2>
         <Members householdId={household.id} />
       </Panel>
 
       {household.myRole === 'owner' && (
-        <Panel className="flex flex-col gap-3">
+        <Panel style={stagger(1)} className="enter flex flex-col gap-3">
           <h2 className="num text-lg">Invite a roommate</h2>
           <InviteLink householdId={household.id} />
         </Panel>
       )}
 
-      <Panel className="flex flex-col gap-3">
+      <Panel style={stagger(2)} className="enter flex flex-col gap-3">
         <h2 className="num text-lg">Appearance</h2>
         <div role="radiogroup" aria-label="Theme" className="flex gap-2">
           {THEMES.map(([value, label]) => (
@@ -105,7 +106,7 @@ export default function Settings() {
               role="radio"
               aria-checked={theme === value}
               onClick={() => { setTheme(value); setThemeState(value) }}
-              className={`min-h-11 flex-1 rounded-full border px-4 font-medium ${theme === value ? 'border-transparent bg-action text-on-action' : 'border-edge text-ink'}`}
+              className={`min-h-11 flex-1 rounded-full border px-4 font-medium transition-colors duration-150 active:scale-[0.97] ${theme === value ? 'border-transparent bg-action text-on-action' : 'border-edge text-ink'}`}
             >
               {label}
             </button>
@@ -113,7 +114,7 @@ export default function Settings() {
         </div>
       </Panel>
 
-      <Panel className="flex flex-col gap-3">
+      <Panel style={stagger(3)} className="enter flex flex-col gap-3">
         <p className="text-ink-2">Signed in as {user.name} ({user.email})</p>
         <Button variant="quiet" onClick={logout}><Icon name="log-out" />Log out</Button>
       </Panel>

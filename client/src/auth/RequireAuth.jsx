@@ -1,13 +1,19 @@
+import { lazy } from 'react'
 import { Navigate, Outlet, useLocation } from 'react-router'
 import { useAuth } from './context.js'
 import { peekInvite } from './pendingInvite.js'
 
-// Signed-out visitors go to login and come back to where they were headed.
+const Landing = lazy(() => import('../pages/Landing.jsx'))
+
+// Signed-out visitors go to login and come back to where they were headed. The front door, exactly "/", shows
+// the landing page instead, so the product has something to say before asking anyone to log in.
 export function RequireAuth() {
   const { status } = useAuth()
   const location = useLocation()
   if (status === 'loading') return null
-  if (status === 'signed-out') return <Navigate to="/login" replace state={{ from: location.pathname }} />
+  if (status === 'signed-out') {
+    return location.pathname === '/' ? <Landing /> : <Navigate to="/login" replace state={{ from: location.pathname }} />
+  }
   return <Outlet />
 }
 

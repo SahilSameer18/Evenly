@@ -1,6 +1,7 @@
 import { Link } from 'react-router'
 import { effectOn, statusLabel } from '../lib/expenses.js'
 import { formatMoney } from '../lib/money.js'
+import { stagger } from '../lib/motion.js'
 import { Chip } from './Panel.jsx'
 
 // Your effect on your own balance, always with a sign AND words, never colour alone.
@@ -17,14 +18,17 @@ export function Effect({ minor, personal }) {
   )
 }
 
-export function ExpenseRow({ expense, myId, nameOf, selected }) {
+// `index` is the row's position in the list: the first few rows ease in one after another, later ones just appear.
+export function ExpenseRow({ expense, myId, nameOf, selected, index = 99 }) {
   const status = statusLabel(expense)
   const payer = expense.paidById === myId ? 'You paid' : `${nameOf(expense.paidById)} paid`
+  const entering = index < 8
   return (
     <Link
       to={`/expenses/${expense.id}`}
       aria-current={selected ? 'true' : undefined}
-      className={`flex min-h-14 items-center gap-3 rounded-2xl px-3 py-2 ${selected ? 'bg-panel' : ''}`}
+      style={entering ? stagger(index) : undefined}
+      className={`flex min-h-14 items-center gap-3 rounded-2xl px-3 py-2 transition-colors duration-150 ${entering ? 'enter' : ''} ${selected ? 'bg-panel' : ''}`}
     >
       <span className="min-w-0 flex-1">
         <span className={`block truncate font-medium ${expense.status === 'reversed' ? 'text-ink-2 line-through' : ''}`}>{expense.description}</span>

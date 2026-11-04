@@ -41,7 +41,7 @@ export default function Expenses() {
   const filtering = Boolean(type || q)
 
   return (
-    <div className="md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] md:gap-6">
+    <div className="enter-fade md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] md:gap-6">
       {/* Phones show the list or one expense, never both; from tablet width they sit side by side. */}
       <section aria-label="Expenses" className={`flex min-w-0 flex-col gap-3 ${expenseId ? 'max-md:hidden' : ''}`}>
         <h1 className="num text-2xl max-md:sr-only">Spending</h1>
@@ -53,7 +53,7 @@ export default function Expenses() {
 
         <div role="radiogroup" aria-label="Filter by kind" className="flex gap-2">
           {FILTERS.map(([value, label]) => (
-            <button key={label} type="button" role="radio" aria-checked={type === value} onClick={() => setType(value)} className={`min-h-11 rounded-full border px-4 font-medium ${type === value ? 'border-transparent bg-action text-on-action' : 'border-edge text-ink'}`}>{label}</button>
+            <button key={label} type="button" role="radio" aria-checked={type === value} onClick={() => setType(value)} className={`min-h-11 rounded-full border px-4 font-medium transition-colors duration-150 active:scale-[0.97] ${type === value ? 'border-transparent bg-action text-on-action' : 'border-edge text-ink'}`}>{label}</button>
           ))}
         </div>
 
@@ -71,10 +71,11 @@ export default function Expenses() {
           )
         ) : (
           <Panel className="flex flex-col p-2">
-            {groups.map((g) => (
+            {groups.map((g, gi) => (
               <Fragment key={g.key}>
                 <h2 className="px-3 pb-1 pt-3 text-xs text-ink-2">{g.label}</h2>
-                {g.items.map((e) => <ExpenseRow key={e.id} expense={e} myId={user.id} nameOf={nameOf} selected={e.id === expenseId} />)}
+                {/* the first rows on screen ease in one after another */}
+                {g.items.map((e, i) => <ExpenseRow key={e.id} expense={e} myId={user.id} nameOf={nameOf} selected={e.id === expenseId} index={gi === 0 ? i : undefined} />)}
               </Fragment>
             ))}
             <div ref={marker} aria-hidden="true" />

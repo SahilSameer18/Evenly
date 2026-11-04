@@ -125,9 +125,35 @@ body {
   outline-offset: 2px;
 }
 
+/* Motion: every animation is one-shot and moves only opacity and transform (cheap for the phone's GPU).
+   Nothing loops. `backwards` fill, not `both`, so nothing is left animating once it has finished. */
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pop { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: none; } }
+@keyframes sheet-up { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes sheet-side { from { transform: translateX(100%); } to { transform: none; } }
+@keyframes toast-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+/* --i is the position in a list (capped at 8 by stagger()), so a long list never makes anyone wait. */
+.enter { animation: rise 320ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards; animation-delay: calc(var(--i, 0) * 40ms); }
+.enter-fade { animation: fade 240ms ease-out backwards; animation-delay: calc(var(--i, 0) * 40ms); }
+.enter-pop { animation: pop 280ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards; animation-delay: calc(var(--i, 0) * 40ms); }
+.toast { animation: toast-in 220ms ease-out backwards; }
+
+/* The add sheet slides up on phones and in from the right on wider screens. Closing is instant. */
+dialog[open] { animation: sheet-up 260ms cubic-bezier(0.2, 0.7, 0.2, 1); }
+dialog[open]::backdrop { animation: fade 200ms ease-out; }
+@media (min-width: 768px) {
+  dialog[open] { animation-name: sheet-side; }
+}
+
+/* An opened question's answer eases in. */
+details[open] > p { animation: rise 240ms ease-out backwards; }
+
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *, *::before, *::after, ::backdrop {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
   }
 }

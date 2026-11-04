@@ -18,7 +18,7 @@ export function ToastProvider({ children }) {
       {children}
       <div role="status" aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-24 z-50 flex justify-center px-4 md:bottom-6">
         {message && (
-          <p className="pointer-events-auto flex max-w-full items-center gap-3 rounded-full bg-action py-1.5 pl-5 pr-2 font-medium text-on-action">
+          <p key={message.text} className="toast pointer-events-auto flex max-w-full items-center gap-3 rounded-full bg-action py-1.5 pl-5 pr-2 font-medium text-on-action">
             <span className="min-w-0 truncate">{message.text}</span>
             {message.action && (
               <button

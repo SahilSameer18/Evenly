@@ -7,6 +7,7 @@ import { Chip, Panel, Skeleton } from '../components/Panel.jsx'
 import { EmptyState, ErrorState } from '../components/States.jsx'
 import { statusLabel } from '../lib/expenses.js'
 import { formatMoney } from '../lib/money.js'
+import { stagger } from '../lib/motion.js'
 
 const KIND = { shared: 'Shared expense', personal: 'Personal expense', on_behalf: 'Paid on behalf', refund: 'Refund' }
 const METHOD = { equal: 'Equally', exact: 'Exact amounts', percentage: 'By percentage', weights: 'By weights' }
@@ -37,7 +38,7 @@ export default function ExpenseDetail() {
 
   const status = statusLabel(expense)
   return (
-    <div className="flex flex-col gap-3">
+    <div className="enter-fade flex flex-col gap-3">
       {back}
       <Panel className="flex flex-col gap-4">
         <div className="flex flex-wrap items-start justify-between gap-2">
@@ -60,7 +61,7 @@ export default function ExpenseDetail() {
       </Panel>
 
       {expense.type !== 'personal' && (
-        <Panel className="flex flex-col gap-2">
+        <Panel style={stagger(2)} className="enter flex flex-col gap-2">
           <h2 className="num text-lg">How it was split</h2>
           <p className="text-ink-2">{METHOD[expense.splitMethod] ?? expense.splitMethod}</p>
           <ul className="flex flex-col divide-y divide-edge">

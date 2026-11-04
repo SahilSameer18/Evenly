@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { Suspense, useEffect } from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { act, render, screen, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -58,6 +58,59 @@ describe('session restore', () => {
     fetchMock.mockResolvedValue(fail(401, 'UNAUTHENTICATED'))
     mount()
     expect(await screen.findByText('login page')).toBeInTheDocument()
+  })
+})
+
+describe('the front door', () => {
+  const at = (entry) => {
+    fetchMock.mockImplementation(async (url) => (url.endsWith('/auth/refresh') ? fail(401, 'UNAUTHENTICATED') : ok({ user: alice })))
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <AuthProvider>
+          <MemoryRouter initialEntries={[entry]}>
+            <Suspense fallback={null}>
+              <Routes>
+                <Route path="/login" element={<div>login page</div>} />
+                <Route element={<RequireAuth />}>
+                  <Route path="/" element={<div>app home</div>} />
+                  <Route path="/expenses" element={<div>app expenses</div>} />
+                </Route>
+              </Routes>
+            </Suspense>
+          </MemoryRouter>
+        </AuthProvider>
+      </QueryClientProvider>,
+    )
+  }
+
+  it('shows the landing page to a signed-out visitor at /', async () => {
+    at('/')
+    expect(await screen.findByRole('heading', { level: 1, name: /Split the bills/ })).toBeInTheDocument()
+    expect(screen.queryByText('app home')).not.toBeInTheDocument()
+  })
+
+  it('still sends a signed-out visitor from a private page to login', async () => {
+    at('/expenses')
+    expect(await screen.findByText('login page')).toBeInTheDocument()
+  })
+
+  it('shows the app, not the landing page, to a signed-in person at /', async () => {
+    fetchMock.mockImplementation(async (url) => (url.endsWith('/auth/refresh') ? ok({ accessToken: 'tok' }) : ok({ user: alice })))
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <AuthProvider>
+          <MemoryRouter initialEntries={['/']}>
+            <Suspense fallback={null}>
+              <Routes>
+                <Route element={<RequireAuth />}><Route path="/" element={<div>app home</div>} /></Route>
+              </Routes>
+            </Suspense>
+          </MemoryRouter>
+        </AuthProvider>
+      </QueryClientProvider>,
+    )
+    expect(await screen.findByText('app home')).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: /Split the bills/ })).not.toBeInTheDocument()
   })
 })
 

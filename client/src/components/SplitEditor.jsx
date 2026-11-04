@@ -4,7 +4,7 @@ import { Avatar } from './Panel.jsx'
 const METHODS = [['equal', 'Equally'], ['percentage', 'Percent'], ['exact', 'Exact'], ['weights', 'Weights']]
 const UNIT = { exact: '₹', percentage: '%', weights: '×' }
 
-const chip = (on) => `min-h-11 rounded-full border px-4 font-medium ${on ? 'border-transparent bg-action text-on-action' : 'border-edge text-ink'}`
+const chip = (on) => `min-h-11 rounded-full border px-4 font-medium transition-colors duration-150 active:scale-[0.97] ${on ? 'border-transparent bg-action text-on-action' : 'border-edge text-ink'}`
 
 // Chooses how an expense is shared and shows each person's share live, using the same maths the server will use.
 export function SplitEditor({ method, onMethod, members, participants, onParticipants, rows, onRows, preview }) {

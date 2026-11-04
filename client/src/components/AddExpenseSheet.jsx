@@ -15,7 +15,7 @@ import { Sheet } from './Sheet.jsx'
 import { SplitEditor } from './SplitEditor.jsx'
 import { ErrorState } from './States.jsx'
 
-const segment = (on) => `min-h-11 flex-1 rounded-full px-4 font-medium ${on ? 'bg-action text-on-action' : 'text-ink-2'}`
+const segment = (on) => `min-h-11 flex-1 rounded-full px-4 font-medium transition-colors duration-150 ${on ? 'bg-action text-on-action' : 'text-ink-2'}`
 
 export function AddExpenseSheet({ open, onClose, household, onSaved }) {
   // The form only exists while the sheet is open, so it starts fresh (and with a new idempotency key) every time.
@@ -85,7 +85,7 @@ function Form({ household, members, onSaved }) {
 
   if (step === 'review') {
     return (
-      <div className="flex flex-col gap-4">
+      <div key="review" className="enter flex flex-col gap-4">
         <Panel className="flex flex-col gap-3">
           <div>
             <p className="text-ink-2">{shared ? 'Shared expense' : 'Personal expense'}</p>
@@ -121,7 +121,7 @@ function Form({ household, members, onSaved }) {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div key="details" className="enter flex flex-col gap-4">
       <div role="radiogroup" aria-label="Kind of expense" className="flex rounded-full border border-edge bg-panel p-1">
         <button type="button" role="radio" aria-checked={shared} onClick={() => setType('shared')} className={segment(shared)}>Shared</button>
         <button type="button" role="radio" aria-checked={!shared} onClick={() => setType('personal')} className={segment(!shared)}>Personal</button>

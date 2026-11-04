@@ -1,6 +1,7 @@
 import { Link } from 'react-router'
 
-const BASE = 'inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 font-medium transition-opacity disabled:opacity-60'
+// Pressing shrinks the button a touch (transform only, 100 ms), so a tap always feels acknowledged.
+const BASE = 'inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 font-medium transition-[transform,opacity] duration-100 active:scale-[0.97] disabled:opacity-60'
 const VARIANTS = {
   action: 'bg-action text-on-action',
   quiet: 'border border-edge text-ink',
