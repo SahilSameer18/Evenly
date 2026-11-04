@@ -51,7 +51,24 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)("POST /api/v1/households/:househ
     it("is not unblocked by a repayment that is still pending", async () => {
       await bobOwesAlice();
       await f.addRepayment(household, bob, alice, 500, "pending");
-      expect((await leave(bob)).status).toBe(409);
+      const res = await leave(bob);
+      expect(res.status).toBe(409);
+      expect(res.body.error.code).toBe("HAS_PENDING_REPAYMENTS");
+    });
+
+    it("blocks the sender and the recipient of a pending repayment even when their balance is zero", async () => {
+      await f.addRepayment(household, bob, alice, 500, "pending"); // pending changes no balance
+      for (const user of [bob, alice]) {
+        const res = await leave(user, user === alice ? { newOwnerId: bob.id } : {});
+        expect(res.status).toBe(409);
+        expect(res.body.error.code).toBe("HAS_PENDING_REPAYMENTS");
+      }
+    });
+
+    it.each(["confirmed", "rejected", "cancelled"])("is unblocked once the repayment is %s (when the balance is zero)", async (status) => {
+      await f.addRepayment(household, bob, alice, 500, status);
+      if (status === "confirmed") await bobOwesAlice(); // bob owes 500 and the confirmed 500 repayment cancels it
+      expect((await leave(bob)).status).toBe(200);
     });
 
     it("lets them go once a confirmed repayment settles it", async () => {

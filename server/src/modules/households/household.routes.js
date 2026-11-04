@@ -11,7 +11,9 @@ import {
   leaveBody,
   updateHouseholdBody,
 } from "./household.validation.js";
+import * as balanceController from "../balances/balance.controller.js";
 import expenseRoutes from "../expenses/expense.routes.js";
+import settlementRoutes from "../settlements/settlement.routes.js";
 import * as controller from "./household.controller.js";
 
 const router = Router();
@@ -28,6 +30,13 @@ router.post("/:householdId/leave", validate({ params: householdParams, body: lea
 
 // Mounting once here puts the membership check in front of every expense route.
 router.use("/:householdId/expenses", validate({ params: householdParams }), householdMembership, expenseRoutes);
+router.use("/:householdId/settlements", validate({ params: householdParams }), householdMembership, settlementRoutes);
+
+// Read-only views worked out by the ledger from the stored records; nothing here is ever stored.
+const member = [validate({ params: householdParams }), householdMembership];
+router.get("/:householdId/balances", member, balanceController.balances);
+router.get("/:householdId/ledger", member, balanceController.ledger);
+router.get("/:householdId/settlement-suggestions", member, balanceController.suggestions);
 
 export default router;
 

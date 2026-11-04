@@ -15,7 +15,6 @@ describe("household repository tenant scoping", () => {
       "findActiveMembership",
       "getHousehold",
       "leaveHousehold",
-      "loadLedger",
       "updateHousehold",
     ]);
   });

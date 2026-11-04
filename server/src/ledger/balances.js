@@ -2,7 +2,7 @@ import { LedgerError } from "./errors.js";
 
 // Disputed expenses still count (household default); reversed ones never do.
 // A reversed refund is ignored too, which gives the refunded amount back to the original expense.
-const COUNTED_STATUS = new Set(["confirmed", "disputed"]);
+export const COUNTED_STATUS = new Set(["confirmed", "disputed"]);
 
 /**
  * Net(u) = Paid(u) - Share(u) + Sent(u) - Received(u). Positive = is owed money.

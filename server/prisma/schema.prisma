@@ -224,8 +224,10 @@ model Settlement {
   note             String?
   status           SettlementStatus @default(pending)
   idempotencyKey   String?
+  requestHash      String? // SHA-256 of the cleaned create request; tells a retry apart from a reused key
   initiatedAt      DateTime         @default(now())
   confirmedAt      DateTime?
+  resolvedAt       DateTime? // when it left "pending": confirmed, rejected or cancelled
 
   household Household @relation(fields: [householdId], references: [id])
   from      User      @relation("SettlementFrom", fields: [fromUserId], references: [id])

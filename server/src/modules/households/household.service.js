@@ -1,6 +1,6 @@
-import { calculateMemberBalances } from "../../ledger/index.js";
 import { hashToken, newOpaqueToken } from "../../lib/tokens.js";
 import { AppError, ConflictError, ForbiddenError, ValidationError } from "../../utils/errors.js";
+import * as balances from "../balances/balance.service.js";
 import * as repository from "./household.repository.js";
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -71,25 +71,14 @@ export async function updateHousehold(membership, body) {
 export async function leave(membership, { newOwnerId }) {
   const { householdId, userId, role } = membership;
 
-  // shortcut: loads the household's whole ledger; fine at household scale, revisit if ledgers grow large.
-  const { expenses, settlements, members } = await repository.loadLedger(householdId);
-  const net = calculateMemberBalances({
-    memberIds: members.map((m) => m.userId),
-    expenses: expenses.map((e) => ({
-      paidBy: e.paidById,
-      amountMinor: e.amountMinor,
-      type: e.type,
-      status: e.status,
-      splits: e.splits.map((s) => ({ userId: s.userId, shareMinor: s.shareMinor })),
-    })),
-    settlements: settlements.map((t) => ({
-      fromUserId: t.fromUserId,
-      toUserId: t.toUserId,
-      amountMinor: t.amountMinor,
-      status: t.status,
-    })),
-  });
-  if (net[userId] !== 0) throw new ConflictError("BALANCE_NOT_ZERO", "Settle up before leaving: your balance is not zero");
+  const state = await balances.loadState(householdId);
+  const { members, settlements } = state;
+
+  // A repayment still waiting for an answer would be left hanging, so it has to be settled first.
+  if (settlements.some((t) => t.status === "pending" && (t.fromUserId === userId || t.toUserId === userId))) {
+    throw new ConflictError("HAS_PENDING_REPAYMENTS", "You have a repayment waiting to be confirmed, rejected or cancelled");
+  }
+  if (balances.netOf(state)[userId] !== 0) throw new ConflictError("BALANCE_NOT_ZERO", "Settle up before leaving: your balance is not zero");
 
   const others = members.filter((m) => m.status === "active" && m.userId !== userId);
   const badOwner = (message) => new ValidationError([{ in: "body", field: "newOwnerId", message }]);

@@ -96,16 +96,6 @@ export function updateHousehold(householdId, data) {
   return prisma.household.update({ where: { id: scoped(householdId) }, data, select: HOUSEHOLD });
 }
 
-// Everything the balance check needs: all records, and every member ever (left members still own history).
-export function loadLedger(householdId) {
-  scoped(householdId);
-  return Promise.all([
-    prisma.expense.findMany({ where: { householdId }, include: { splits: true } }),
-    prisma.settlement.findMany({ where: { householdId } }),
-    prisma.householdMember.findMany({ where: { householdId }, select: { userId: true, status: true } }),
-  ]).then(([expenses, settlements, members]) => ({ expenses, settlements, members }));
-}
-
 // New owner (if any), the leaver marked left, and the optional archive: all or nothing.
 export function leaveHousehold(householdId, { userId, newOwnerId, archive }) {
   scoped(householdId);

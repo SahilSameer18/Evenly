@@ -4,3 +4,4 @@ export { splitEqual, splitByBasisPoints, splitByWeights, splitExact } from "./sp
 export { calculateMemberBalances } from "./balances.js";
 export { suggestSettlements } from "./suggest.js";
 export { calculateRefundShares } from "./refund.js";
+export { explainLedger } from "./explain.js";
