@@ -98,6 +98,13 @@ Desktop is the responsive extension of the phone design: same colours, type and 
 | Add expense | Bottom sheet with a big keypad | Side panel with a normal keyboard: the amount is a text field and the keypad is dropped |
 | Width | Full width | Content capped at about 960 px and centred |
 
+### Responsive rules (checked in the browser, not assumed)
+
+- Built mobile first for 320 px and up; no horizontal scroll at any width up to 2560 px, in portrait or landscape. Breakpoints: `sm` 480, `md` 768 (sidebar collapses to icons, list and detail side by side, side-panel sheet), `lg` 1024 (labelled sidebar, two-column Overview), `xl` 1280 and `2xl` 1536 (content stays in a centred column of 960 to 1200 px).
+- The big balance and the amount entry use `clamp()` so they shrink on small screens; names and amounts truncate or wrap instead of pushing the layout; sheets scroll inside on short screens and use `dvh` units.
+- Every tap target is at least 44 px on touch widths, including text links. Run the in-browser audit (overflow and tap-target size on every route and the Add sheet) at 320, 360, 430, 600, 768, 1024, 1280, 1440, 1920, 2560 and landscape 667×375 after any layout change.
+- The balance card is dark in both themes, so its text colours are fixed (`hero-ink`, `hero-owed`, `hero-owe`).
+
 - **Keyboard:** everything works by keyboard with a visible focus ring, and the amount field accepts typing and paste.
 - **Hover** states exist but nothing depends on hover, because touch laptops are the same app.
 - **Tablets** use the desktop layout, with the sidebar collapsed to icons.
