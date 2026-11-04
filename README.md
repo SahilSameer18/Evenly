@@ -4,7 +4,7 @@ Shared-expense tracker for roommates. Every balance is computed from recorded tr
 
 **Engineered by [Sahil Sameer Siddique](https://www.linkedin.com/in/sahil-sameer-siddique/)** · [LinkedIn](https://www.linkedin.com/in/sahil-sameer-siddique/)
 
-> **Status:** early development, not deployed. Part 1 is done: the money engine, database, authentication and households (with tenant isolation) are built and tested. Part 2 is under way: the expense API is complete (create, read, edit, reverse, refund, dispute, history). Settlements, balances and the app UI are next. See [the plan](docs/PLAN.md) and the [dev log](docs/DEVLOG.md).
+> **Status:** the MVP is built and being deployed: [evenly-s.vercel.app](https://evenly-s.vercel.app) (web app) in front of an API on Render and a Neon database. The money engine, authentication, households, expenses, repayments, balances and the whole app UI are done and tested. See [the plan](docs/PLAN.md), the [dev log](docs/DEVLOG.md) and the [runbook](docs/RUNBOOK.md).
 
 ## Principles
 
@@ -215,6 +215,19 @@ erDiagram
 
 `GET /health` and `GET /ready` are the liveness and database checks.
 
+## How it is deployed
+
+The browser only talks to the Vercel address. Vercel serves the web app and forwards `/api/*` to the API, so the login cookie stays on one site and no custom domain is needed. Settings and recovery steps are in [RUNBOOK.md](docs/RUNBOOK.md).
+
+```mermaid
+flowchart LR
+    B[Browser] -->|"the app and /api/*"| V["Vercel<br/>web app + forwarding rule"]
+    V -->|"/api/* forwarded"| R["Render<br/>Express API"]
+    R -->|"pooled connection"| N[("Neon<br/>PostgreSQL")]
+    G[GitHub main] -.->|"push redeploys"| V
+    G -.->|"push redeploys"| R
+```
+
 ## Stack
 
 | Layer | Choice |
@@ -240,6 +253,7 @@ docs/     PRD, plan, ledger rules, security, ADRs, dev log
 - [Plan](docs/PLAN.md): phased roadmap and progress
 - [Ledger](docs/LEDGER.md): formulas, algorithms, invariants
 - [Security](docs/SECURITY.md): what is enforced, known limits
+- [Runbook](docs/RUNBOOK.md): where it runs, settings, deploying, rolling back, restoring, reading logs
 - [Folder structure](docs/FOLDER.md): layout, built and planned
 - [Decisions (ADRs)](docs/ADR): money representation, database, tenancy, idempotency, cookie sessions, expense lifecycle
 - [Dev log](docs/DEVLOG.md): weekly progress

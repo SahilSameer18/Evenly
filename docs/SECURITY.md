@@ -111,7 +111,9 @@ Decision record: [ADR 007](ADR/007-settlements-and-balances.md).
 - **Expense creation is not rate limited** yet, beyond the 100 kb body limit.
 - **If the person who recorded an expense leaves the household, nobody else can edit or reverse it.** Members can still dispute it.
 - **The history endpoint returns at most 200 events** and is not paged.
-- **Trust proxy is set to one hop in production.** Check the real hop count when deploying, or IP limits will see the proxy instead of the client.
+- **The number of proxies in front of the API is the `TRUST_PROXY` setting** (default 1; 2 when Vercel forwards to Render, which is how the live site is set up). Too low and every user shares one rate-limit bucket; too high and a client could fake its IP. A blank value counts as "not set". The two-network check in [RUNBOOK.md](RUNBOOK.md) confirms the number after deploying.
+- **The live site reaches the API through Vercel's forwarding** (`client/vercel.json`), so the browser sees one site and the refresh cookie stays same-origin. `CLIENT_ORIGIN` must equal the Vercel address exactly, or the CSRF origin check refuses cookie requests.
+- **On Render's free plan the API sleeps when idle**, which resets the in-memory rate limits.
 
 ## Not done yet
 
