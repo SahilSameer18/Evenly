@@ -7,7 +7,12 @@
     "test": "vitest run",
     "seed": "node prisma/seed.js",
     "dev": "nodemon server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "build": "prisma generate",
+    "migrate": "prisma migrate deploy"
+  },
+  "engines": {
+    "node": ">=22"
   },
   "keywords": [],
   "author": "",

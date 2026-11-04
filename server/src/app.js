@@ -12,8 +12,8 @@ import householdRoutes, { invitationRouter } from "./modules/households/househol
 
 const app = express();
 
-// shortcut: assumes exactly one proxy (the host's) in front of the app; check the hop count when deploying.
-if (env.NODE_ENV === "production") app.set("trust proxy", 1);
+// The number of proxies in front of the app comes from TRUST_PROXY; confirm it with the two-network rate-limit check (docs/RUNBOOK.md).
+if (env.NODE_ENV === "production") app.set("trust proxy", env.TRUST_PROXY);
 
 app.use(requestLogger);
 app.use(helmet());
