@@ -1,4 +1,5 @@
 import { LedgerError, splitByBasisPoints, splitByWeights, splitEqual, splitExact } from '@ledger'
+import { minorToAmountText } from './amount.js'
 import { formatMoney } from './money.js'
 
 // The server picks who gets a leftover paisa with a hash seeded by the new expense's id, which does not exist
@@ -68,9 +69,28 @@ export function previewSplit(method, amountMinor, input) {
   }
 }
 
-/** The request body for POST /expenses, exactly as the server's createExpenseBody expects it. */
-export function buildExpenseBody({ type, description, amountMinor, notes, paidById, method, participants = [], rows = {} }) {
-  const common = { description: description.trim(), amountMinor, ...(notes?.trim() && { notes: notes.trim() }) }
+/**
+ * The starting state of the edit form for an existing expense. The server keeps only the shares of a percentage or
+ * weights split (not the original inputs), so those open as exact amounts, which always add up.
+ */
+export function prefillFromExpense(expense) {
+  const equal = expense.splitMethod === 'equal'
+  return {
+    type: expense.type,
+    amountText: minorToAmountText(expense.amountMinor),
+    description: expense.description,
+    paidById: expense.paidById,
+    method: equal ? 'equal' : 'exact',
+    participants: expense.splits.map((s) => s.userId),
+    rowsByMethod: { exact: Object.fromEntries(expense.splits.map((s) => [s.userId, minorToAmountText(s.shareMinor)])) },
+    converted: !equal && expense.splitMethod !== 'exact',
+  }
+}
+
+/** The request body for POST /expenses (and, with `version`, PATCH), exactly as the server's schemas expect it. */
+export function buildExpenseBody({ type, description, amountMinor, notes, paidById, method, participants = [], rows = {}, version }) {
+  // An edit sends the whole expense again plus the version that was edited.
+  const common = { description: description.trim(), amountMinor, ...(notes?.trim() && { notes: notes.trim() }), ...(version != null && { version }) }
   if (type === 'personal') return { type: 'personal', ...common }
 
   const { parts } = readParts(method, { participants, rows })

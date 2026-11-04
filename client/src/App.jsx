@@ -5,12 +5,12 @@ import { AuthProvider } from './auth/AuthProvider.jsx'
 import { GuestOnly, RequireAuth } from './auth/RequireAuth.jsx'
 import { AppShell } from './components/AppShell.jsx'
 import { ToastProvider } from './components/ToastProvider.jsx'
-import { Settle } from './pages/Placeholders.jsx'
 
 // Screens load on demand, so the first visit downloads only what it needs.
 const Overview = lazy(() => import('./pages/Overview.jsx'))
 const Expenses = lazy(() => import('./pages/Expenses.jsx'))
 const ExpenseDetail = lazy(() => import('./pages/ExpenseDetail.jsx'))
+const Settle = lazy(() => import('./pages/Settle.jsx'))
 const AuthCard = lazy(() => import('./pages/AuthCard.jsx'))
 const Invite = lazy(() => import('./pages/Invite.jsx'))
 const CreateHousehold = lazy(() => import('./pages/CreateHousehold.jsx'))

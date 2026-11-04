@@ -1,15 +1,15 @@
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { newIdempotencyKey } from '../api/client.js'
-import { createExpense, refreshMoney } from '../api/expenses.js'
+import { createExpense, refreshMoney, updateExpense } from '../api/expenses.js'
 import { useHousehold } from '../api/households.js'
 import { useAuth } from '../auth/context.js'
-import { amountToMinor, groupAmountText, sanitizeAmount } from '../lib/amount.js'
+import { amountToMinor } from '../lib/amount.js'
 import { formatMoney } from '../lib/money.js'
-import { buildExpenseBody, previewSplit } from '../lib/split.js'
+import { buildExpenseBody, prefillFromExpense, previewSplit } from '../lib/split.js'
+import { AmountInput } from './AmountInput.jsx'
 import { Button } from './Button.jsx'
 import { Field } from './Field.jsx'
-import { Keypad } from './Keypad.jsx'
 import { Panel, Skeleton } from './Panel.jsx'
 import { Sheet } from './Sheet.jsx'
 import { SplitEditor } from './SplitEditor.jsx'
@@ -17,35 +17,37 @@ import { ErrorState } from './States.jsx'
 
 const segment = (on) => `min-h-11 flex-1 rounded-full px-4 font-medium transition-colors duration-150 ${on ? 'bg-action text-on-action' : 'text-ink-2'}`
 
-export function AddExpenseSheet({ open, onClose, household, onSaved }) {
+// With an `expense` it edits that expense instead of adding one. `onStale` runs when someone else changed it first.
+export function AddExpenseSheet({ open, onClose, household, expense, onSaved, onStale }) {
   // The form only exists while the sheet is open, so it starts fresh (and with a new idempotency key) every time.
   return (
-    <Sheet open={open} onClose={onClose} title="Add expense">
-      {open && <Loader household={household} onSaved={onSaved} />}
+    <Sheet open={open} onClose={onClose} title={expense ? 'Edit expense' : 'Add expense'}>
+      {open && <Loader household={household} expense={expense} onSaved={onSaved} onStale={onStale} />}
     </Sheet>
   )
 }
 
-function Loader({ household, onSaved }) {
+function Loader({ household, expense, onSaved, onStale }) {
   const { data, isPending, error, refetch } = useHousehold(household.id)
   if (isPending) return <Skeleton className="h-72" />
   if (error) return <ErrorState error={error} onRetry={refetch} />
-  return <Form household={household} members={data.members} onSaved={onSaved} />
+  return <Form household={household} members={data.members} expense={expense} onSaved={onSaved} onStale={onStale} />
 }
 
-function Form({ household, members, onSaved }) {
+function Form({ household, members, expense, onSaved, onStale }) {
   const { user } = useAuth()
   const queryClient = useQueryClient()
   const [idempotencyKey] = useState(newIdempotencyKey)
 
   const [step, setStep] = useState('details')
-  const [type, setType] = useState('shared')
-  const [amountText, setAmountText] = useState('')
-  const [description, setDescription] = useState('')
-  const [paidById, setPaidById] = useState(user.id)
-  const [method, setMethod] = useState(household.defaultSplitMethod ?? 'equal')
-  const [participants, setParticipants] = useState(members.map((m) => m.userId))
-  const [rowsByMethod, setRowsByMethod] = useState({ weights: Object.fromEntries(members.map((m) => [m.userId, '1'])) })
+  const [start] = useState(() => (expense ? prefillFromExpense(expense) : null))
+  const [type, setType] = useState(start?.type ?? 'shared')
+  const [amountText, setAmountText] = useState(start?.amountText ?? '')
+  const [description, setDescription] = useState(start?.description ?? '')
+  const [paidById, setPaidById] = useState(start?.paidById ?? user.id)
+  const [method, setMethod] = useState(start?.method ?? household.defaultSplitMethod ?? 'equal')
+  const [participants, setParticipants] = useState(start?.participants ?? members.map((m) => m.userId))
+  const [rowsByMethod, setRowsByMethod] = useState(start?.rowsByMethod ?? { weights: Object.fromEntries(members.map((m) => [m.userId, '1'])) })
   const [showErrors, setShowErrors] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
@@ -71,11 +73,12 @@ function Form({ household, members, onSaved }) {
     setSaving(true)
     setError(null)
     try {
-      const body = buildExpenseBody({ type, description, amountMinor, paidById, method, participants, rows })
-      // A retry after a failure reuses the same key, so it can never create a second expense.
-      const { expense } = await createExpense(household.id, body, idempotencyKey)
+      const body = buildExpenseBody({ type, description, amountMinor, paidById, method, participants, rows, version: expense?.version })
+      // A new expense: a retry after a failure reuses the same key, so it can never create a second one.
+      // An edit is guarded by the version instead: if someone else changed it first, the server says so (409).
+      const saved = expense ? await updateExpense(household.id, expense.id, body) : (await createExpense(household.id, body, idempotencyKey)).expense
       await refreshMoney(queryClient, household.id)
-      onSaved(expense)
+      onSaved(saved)
     } catch (err) {
       setError(err)
     } finally {
@@ -108,13 +111,18 @@ function Form({ household, members, onSaved }) {
           )}
           {!shared && <p className="text-ink-2">Only you can see this. It never changes anyone's balance.</p>}
         </Panel>
-        {error && (
+        {error?.code === 'STALE_VERSION' ? (
+          <div role="alert" className="flex flex-col gap-2">
+            <p className="text-owe">Someone else changed this expense while you were editing it. Reload to see the latest, then make your change again.</p>
+            <Button variant="quiet" onClick={onStale}>Reload the latest</Button>
+          </div>
+        ) : error && (
           <div role="alert" className="flex flex-col gap-1">
             <p className="text-owe">{error.message}{error.status === 0 ? ' Nothing was lost: try again.' : ''}</p>
             {error.requestId && <p className="text-xs text-ink-2">Reference: {error.requestId}</p>}
           </div>
         )}
-        <Button onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save expense'}</Button>
+        <Button onClick={save} disabled={saving}>{saving ? 'Saving…' : expense ? 'Save changes' : 'Save expense'}</Button>
         <Button variant="quiet" onClick={() => setStep('details')} disabled={saving}>Back</Button>
       </div>
     )
@@ -122,23 +130,15 @@ function Form({ household, members, onSaved }) {
 
   return (
     <div key="details" className="enter flex flex-col gap-4">
-      <div role="radiogroup" aria-label="Kind of expense" className="flex rounded-full border border-edge bg-panel p-1">
-        <button type="button" role="radio" aria-checked={shared} onClick={() => setType('shared')} className={segment(shared)}>Shared</button>
-        <button type="button" role="radio" aria-checked={!shared} onClick={() => setType('personal')} className={segment(!shared)}>Personal</button>
-      </div>
+      {/* The kind of an expense cannot change once it exists, so the switch is only for a new one. */}
+      {!expense && (
+        <div role="radiogroup" aria-label="Kind of expense" className="flex rounded-full border border-edge bg-panel p-1">
+          <button type="button" role="radio" aria-checked={shared} onClick={() => setType('shared')} className={segment(shared)}>Shared</button>
+          <button type="button" role="radio" aria-checked={!shared} onClick={() => setType('personal')} className={segment(!shared)}>Personal</button>
+        </div>
+      )}
 
-      {/* Phones show the amount big with the on-screen keypad; desktop has a normal text field. */}
-      <div className="md:hidden">
-        <p aria-live="polite" aria-label={`Amount: ${amountText || '0'} rupees`} className="num flex items-baseline justify-center gap-1 text-[clamp(2.25rem,13vw,3.5rem)] leading-tight">
-          <span className="text-[0.5em] text-ink-2">₹</span>
-          <span className={amountText ? '' : 'text-ink-2'}>{groupAmountText(amountText) || '0'}</span>
-        </p>
-        {showErrors && problem.amount && <p className="text-center text-owe">{problem.amount}</p>}
-        <div className="mt-2"><Keypad value={amountText} onChange={setAmountText} /></div>
-      </div>
-      <div className="hidden md:block">
-        <Field label="Amount (₹)" inputMode="decimal" autoFocus placeholder="0" value={amountText} onChange={(e) => setAmountText(sanitizeAmount(e.target.value))} error={showErrors ? problem.amount : undefined} />
-      </div>
+      <AmountInput value={amountText} onChange={setAmountText} error={showErrors ? problem.amount : undefined} />
 
       <Field label="What was it for?" value={description} maxLength={140} placeholder="Groceries" onChange={(e) => setDescription(e.target.value)} error={showErrors ? problem.description : undefined} />
 
@@ -161,6 +161,9 @@ function Form({ household, members, onSaved }) {
             preview={preview}
           />
         </>
+      )}
+      {start?.converted && method === 'exact' && (
+        <p className="text-xs text-ink-2">This was split by {expense.splitMethod === 'percentage' ? 'percentage' : 'weights'}. It opens as exact amounts; you can switch the method above.</p>
       )}
       {showErrors && problem.split && <p role="alert" className="text-owe">{problem.split}</p>}
 

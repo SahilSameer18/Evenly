@@ -48,7 +48,7 @@ export default function Expenses() {
 
         <label className="flex min-h-12 items-center gap-2 rounded-full border border-edge bg-panel px-4">
           <Icon name="search" className="shrink-0 text-ink-2" />
-          <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search expenses" aria-label="Search expenses" className="min-w-0 flex-1 bg-transparent py-2 text-ink placeholder:text-ink-2" />
+          <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search expenses" aria-label="Search expenses" className="min-h-11 min-w-0 flex-1 bg-transparent py-2 text-ink placeholder:text-ink-2" />
         </label>
 
         <div role="radiogroup" aria-label="Filter by kind" className="flex gap-2">

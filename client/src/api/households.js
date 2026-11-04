@@ -7,6 +7,9 @@ export const useHouseholds = () =>
 export const useHousehold = (id) =>
   useQuery({ queryKey: ['household', id], enabled: Boolean(id), queryFn: async () => (await request(`/households/${id}`)).data.household })
 
+// Owner only: rename the household or change the usual way to split.
+export const updateHousehold = (id, body) => request(`/households/${id}`, { method: 'PATCH', body }).then(({ data }) => data.household)
+
 // One household per person in the MVP, so "mine" is the first one the server lists.
 export function useMyHousehold() {
   const { data, ...rest } = useHouseholds()

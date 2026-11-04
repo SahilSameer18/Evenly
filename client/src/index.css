@@ -26,6 +26,7 @@
   --hero-ink-2: #b8afa6;
   --hero-owed: #d8f04a;
   --hero-owe: #ff8f5c;
+  --hero-pending: #ffb547;
   color-scheme: dark;
 }
 
@@ -83,6 +84,7 @@
   --color-hero-ink-2: var(--hero-ink-2);
   --color-hero-owed: var(--hero-owed);
   --color-hero-owe: var(--hero-owe);
+  --color-hero-pending: var(--hero-pending);
   --font-display: "Syne", system-ui, sans-serif;
   --font-sans: "Plus Jakarta Sans", system-ui, sans-serif;
 }

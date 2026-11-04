@@ -1,7 +1,7 @@
 import { Link } from 'react-router'
 import { Button } from '../components/Button.jsx'
 import { Icon } from '../components/Icon.jsx'
-import { Chip, Panel } from '../components/Panel.jsx'
+import { Panel } from '../components/Panel.jsx'
 import { ThemeToggle } from '../components/ThemeToggle.jsx'
 import { formatMoney } from '../lib/money.js'
 import { stagger } from '../lib/motion.js'
@@ -12,13 +12,11 @@ const LINKEDIN = 'https://www.linkedin.com/in/sahil-sameer-siddique/'
 const wrap = 'mx-auto w-full max-w-[1120px] px-4 sm:px-6 lg:px-8'
 const h2 = 'num text-[clamp(1.75rem,5vw,2.5rem)] leading-tight'
 
-// Every claim here must be true of the product today. Repayments are built on the server but their screens
-// are not (phase 2.5), so they carry a "Soon" tag: remove it when the Settle screen ships.
-const Soon = () => <Chip tone="quiet">Soon</Chip>
+// Every claim here must be true of the product today. Add a "Soon" tag to anything that is not built yet.
 
 const STEPS = [
   { title: 'Add an expense', text: 'Split it equally, by percentage, by weight, or with exact amounts. Everyone sees it straight away.' },
-  { title: 'Pay each other back', text: 'Record a repayment. The other person confirms it before any balance changes.', soon: true },
+  { title: 'Pay each other back', text: 'Record a repayment. The other person confirms it before any balance changes.' },
   { title: 'See where you stand', text: 'Your balance says who owes whom, worked out from the expenses you recorded.' },
 ]
 
@@ -28,7 +26,7 @@ const FEATURES = [
   { icon: 'lock', title: 'Private when you want', text: 'A personal expense is visible only to you and never changes anyone\'s balance.' },
   { icon: 'refresh', title: 'Safe on a bad connection', text: 'Tapping twice or retrying after the signal drops never records the same expense twice.' },
   { icon: 'clock', title: 'A history that stays', text: 'Nothing is deleted. A mistake is reversed, and the record shows who changed what and why.' },
-  { icon: 'swap', title: 'Repayments you both confirm', text: 'The person being paid confirms the money arrived, so a balance never moves on one person\'s word.', soon: true },
+  { icon: 'swap', title: 'Repayments you both confirm', text: 'The person being paid confirms the money arrived, so a balance never moves on one person\'s word.' },
 ]
 
 const FACTS = [
@@ -110,7 +108,7 @@ export default function Landing() {
               <li key={s.title} className="list-none">
                 <Panel className="h-full">
                   <p className="num text-owed" aria-hidden="true">{i + 1}</p>
-                  <h3 className="mt-1 flex flex-wrap items-center gap-2 text-lg font-medium">{s.title}{s.soon && <Soon />}</h3>
+                  <h3 className="mt-1 flex flex-wrap items-center gap-2 text-lg font-medium">{s.title}</h3>
                   <p className="mt-2 text-ink-2">{s.text}</p>
                 </Panel>
               </li>
@@ -125,7 +123,7 @@ export default function Landing() {
               <li key={f.title} className="list-none">
                 <Panel className="h-full">
                   <Icon name={f.icon} size={24} className="text-owed" />
-                  <h3 className="mt-3 flex flex-wrap items-center gap-2 text-lg font-medium">{f.title}{f.soon && <Soon />}</h3>
+                  <h3 className="mt-3 flex flex-wrap items-center gap-2 text-lg font-medium">{f.title}</h3>
                   <p className="mt-2 text-ink-2">{f.text}</p>
                 </Panel>
               </li>

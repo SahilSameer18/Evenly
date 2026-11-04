@@ -3,6 +3,7 @@ import { Link, Navigate, NavLink, Outlet } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { reverseExpense, refreshMoney } from '../api/expenses.js'
 import { useMyHousehold } from '../api/households.js'
+import { usePendingSettlements } from '../api/settlements.js'
 import { useAuth } from '../auth/context.js'
 import { AddExpenseSheet } from './AddExpenseSheet.jsx'
 import { Icon } from './Icon.jsx'
@@ -10,6 +11,7 @@ import { Avatar, Skeleton } from './Panel.jsx'
 import { ErrorState } from './States.jsx'
 import { ThemeToggle } from './ThemeToggle.jsx'
 import { useToast } from './toast.js'
+import { splitPending } from '../lib/settle.js'
 import { useScrolled } from '../lib/useScrolled.js'
 
 const LINKS = [
@@ -20,6 +22,7 @@ const LINKS = [
 
 // Phone: icon over label in the bottom bar. Tablet (md): icons only in the sidebar. Desktop (lg): icon and label.
 const linkClass = ({ isActive }) => `flex min-h-11 transition-colors duration-150 min-w-11 flex-col items-center justify-center gap-0.5 text-xs md:size-11 md:flex-row md:justify-center md:self-center md:rounded-xl lg:size-auto lg:w-full lg:justify-start lg:gap-3 lg:px-3 lg:text-sm ${isActive ? 'text-ink md:bg-panel' : 'text-ink-2'}`
+const Dot = () => <span aria-hidden="true" className="absolute -right-1 -top-0.5 size-2.5 rounded-full bg-hero-pending" />
 const label = 'md:sr-only lg:not-sr-only'
 
 export function AppShell() {
@@ -29,6 +32,8 @@ export function AppShell() {
   const queryClient = useQueryClient()
   const [adding, setAdding] = useState(false)
   const [topMarker, scrolled] = useScrolled()
+  // A small dot on Settle while a repayment waits for your answer (one cached request, shared with the Overview).
+  const waiting = splitPending(usePendingSettlements(household?.id).data ?? [], user.id).toAnswer.length
 
   if (isPending) return <main className="mx-auto max-w-[960px] p-4"><Skeleton className="h-44" /></main>
   if (error) return <main className="mx-auto max-w-[960px] p-4"><ErrorState error={error} onRetry={refetch} /></main>
@@ -59,7 +64,7 @@ export function AppShell() {
           <Icon name="plus" /><span className="max-lg:sr-only">Add expense</span>
         </button>
         {LINKS.map((l) => (
-          <NavLink key={l.to} to={l.to} end={l.end} aria-label={l.label} className={linkClass}><Icon name={l.icon} /><span className={label}>{l.label}</span></NavLink>
+          <NavLink key={l.to} to={l.to} end={l.end} aria-label={l.to === '/settle' && waiting > 0 ? 'Settle, a repayment is waiting for your answer' : l.label} className={linkClass}><span className="relative"><Icon name={l.icon} />{l.to === '/settle' && waiting > 0 && <Dot />}</span><span className={label}>{l.label}</span></NavLink>
         ))}
         <div className="mt-auto flex flex-col gap-1">
           <ThemeToggle className="self-center lg:self-start" />
@@ -87,7 +92,7 @@ export function AppShell() {
         <NavLink to="/" end className={linkClass}><Icon name="home" />Home</NavLink>
         <NavLink to="/expenses" className={linkClass}><Icon name="receipt" />Spend</NavLink>
         <button type="button" onClick={() => setAdding(true)} aria-label="Add expense" className="inline-flex size-12 items-center justify-center rounded-full bg-owed-fill text-on-owed"><Icon name="plus" size={24} /></button>
-        <NavLink to="/settle" className={linkClass}><Icon name="swap" />Settle</NavLink>
+        <NavLink to="/settle" className={linkClass}><span className="relative"><Icon name="swap" />{waiting > 0 && <Dot />}</span>Settle{waiting > 0 && <span className="sr-only">, a repayment is waiting for your answer</span>}</NavLink>
       </nav>
 
       <AddExpenseSheet open={adding} onClose={() => setAdding(false)} household={household} onSaved={saved} />

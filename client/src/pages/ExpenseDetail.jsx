@@ -1,13 +1,21 @@
+import { useState } from 'react'
 import { Link, useOutletContext, useParams } from 'react-router'
-import { useExpense } from '../api/expenses.js'
+import { useQueryClient } from '@tanstack/react-query'
+import { disputeExpense, refreshMoney, reverseExpense, useExpense, useExpenseHistory, withdrawDispute } from '../api/expenses.js'
 import { useHousehold } from '../api/households.js'
+import { useAuth } from '../auth/context.js'
+import { AddExpenseSheet } from '../components/AddExpenseSheet.jsx'
 import { Button } from '../components/Button.jsx'
+import { ExpenseHistory } from '../components/ExpenseHistory.jsx'
 import { Icon } from '../components/Icon.jsx'
 import { Chip, Panel, Skeleton } from '../components/Panel.jsx'
+import { ReasonSheet } from '../components/ReasonSheet.jsx'
 import { EmptyState, ErrorState } from '../components/States.jsx'
+import { useToast } from '../components/toast.js'
 import { statusLabel } from '../lib/expenses.js'
 import { formatMoney } from '../lib/money.js'
 import { stagger } from '../lib/motion.js'
+import { allowedActions, disputerOf } from '../lib/permissions.js'
 
 const KIND = { shared: 'Shared expense', personal: 'Personal expense', on_behalf: 'Paid on behalf', refund: 'Refund' }
 const METHOD = { equal: 'Equally', exact: 'Exact amounts', percentage: 'By percentage', weights: 'By weights' }
@@ -15,8 +23,14 @@ const METHOD = { equal: 'Equally', exact: 'Exact amounts', percentage: 'By perce
 export default function ExpenseDetail() {
   const { household } = useOutletContext()
   const { expenseId } = useParams()
+  const { user } = useAuth()
+  const toast = useToast()
+  const queryClient = useQueryClient()
   const { data: expense, isPending, error, refetch } = useExpense(household.id, expenseId)
+  const history = useExpenseHistory(household.id, expenseId)
   const people = useHousehold(household.id)
+  const [editing, setEditing] = useState(false)
+  const [asking, setAsking] = useState(null) // 'reverse' | 'dispute' | null
   const nameOf = (id) => people.data?.members.find((m) => m.userId === id)?.name ?? 'Someone'
 
   const back = (
@@ -37,6 +51,22 @@ export default function ExpenseDetail() {
   if (error) return <div className="flex flex-col gap-3">{back}<ErrorState error={error} onRetry={refetch} /></div>
 
   const status = statusLabel(expense)
+  const can = allowedActions(expense, user.id, disputerOf(history.data))
+
+  // After any change, everything derived from it (balances, lists, suggestions, the history) is stale.
+  const changed = async (message) => {
+    await refreshMoney(queryClient, household.id)
+    toast(message)
+  }
+  const withdraw = async () => {
+    try {
+      await withdrawDispute(household.id, expense.id)
+      await changed('Dispute withdrawn.')
+    } catch (err) {
+      toast(err.message)
+    }
+  }
+
   return (
     <div className="enter-fade flex flex-col gap-3">
       {back}
@@ -58,6 +88,18 @@ export default function ExpenseDetail() {
           {expense.version > 1 && (<><dt className="text-ink-2">Edited</dt><dd className="text-right">{expense.version - 1} {expense.version === 2 ? 'time' : 'times'}</dd></>)}
         </dl>
         {expense.notes && <p className="break-words text-ink-2">{expense.notes}</p>}
+
+        {(can.edit || can.reverse || can.dispute || can.withdraw) && (
+          <div className="flex flex-wrap gap-2 border-t border-edge pt-4">
+            {can.edit && <Button variant="quiet" onClick={() => setEditing(true)}>Edit</Button>}
+            {can.dispute && <Button variant="quiet" onClick={() => setAsking('dispute')}>Dispute</Button>}
+            {can.withdraw && <Button variant="quiet" onClick={withdraw}>Withdraw dispute</Button>}
+            {can.reverse && <Button variant="destructive" onClick={() => setAsking('reverse')}>Reverse</Button>}
+          </div>
+        )}
+        {expense.status === 'disputed' && !can.withdraw && (
+          <p className="text-ink-2">Someone has questioned this expense. It still counts in balances until {can.edit ? 'you edit or reverse it' : `${nameOf(expense.createdById)} edits or reverses it`}.</p>
+        )}
       </Panel>
 
       {expense.type !== 'personal' && (
@@ -74,6 +116,38 @@ export default function ExpenseDetail() {
           </ul>
         </Panel>
       )}
+
+      <ExpenseHistory query={history} nameOf={nameOf} />
+
+      <AddExpenseSheet
+        open={editing}
+        onClose={() => setEditing(false)}
+        household={household}
+        expense={expense}
+        onSaved={() => { setEditing(false); toast('Expense updated.') }}
+        onStale={async () => { setEditing(false); await refreshMoney(queryClient, household.id); toast('Reloaded the latest version. Press Edit to try again.') }}
+      />
+      <ReasonSheet
+        open={asking === 'reverse'}
+        onClose={() => setAsking(null)}
+        title="Reverse this expense"
+        intro="It stops counting in balances. The record stays, with your reason, so everyone can see what happened."
+        label="Why are you reversing it?"
+        required
+        submitLabel="Reverse expense"
+        destructive
+        onSubmit={async (reason) => { await reverseExpense(household.id, expense.id, reason); await changed('Expense reversed.') }}
+      />
+      <ReasonSheet
+        open={asking === 'dispute'}
+        onClose={() => setAsking(null)}
+        title="Dispute this expense"
+        intro={`Tell ${nameOf(expense.createdById)} what looks wrong. It still counts in balances until they edit or reverse it, and you can withdraw the dispute.`}
+        label="What looks wrong?"
+        required
+        submitLabel="Send dispute"
+        onSubmit={async (reason) => { await disputeExpense(household.id, expense.id, reason); await changed('Dispute sent.') }}
+      />
     </div>
   )
 }

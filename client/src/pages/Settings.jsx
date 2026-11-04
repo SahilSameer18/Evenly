@@ -1,15 +1,75 @@
 import { useState } from 'react'
 import { useOutletContext } from 'react-router'
+import { useQueryClient } from '@tanstack/react-query'
 import { request } from '../api/client.js'
-import { useHousehold } from '../api/households.js'
+import { updateHousehold, useHousehold } from '../api/households.js'
 import { useAuth } from '../auth/context.js'
 import { Button } from '../components/Button.jsx'
+import { Field } from '../components/Field.jsx'
 import { Icon } from '../components/Icon.jsx'
 import { Avatar, Panel, Skeleton } from '../components/Panel.jsx'
 import { ErrorState } from '../components/States.jsx'
 import { useToast } from '../components/toast.js'
+import { fieldErrors } from '../lib/errors.js'
 import { stagger } from '../lib/motion.js'
 import { getTheme, setTheme } from '../lib/theme.js'
+
+const SPLITS = [['equal', 'Equally'], ['percentage', 'By percentage'], ['exact', 'Exact amounts'], ['weights', 'By weights']]
+
+// The owner can rename the household and change the usual way to split; everyone else just sees them.
+function HouseholdDetails({ household }) {
+  const queryClient = useQueryClient()
+  const toast = useToast()
+  const [name, setName] = useState(household.name)
+  const [split, setSplit] = useState(household.defaultSplitMethod)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState(null)
+  const fields = fieldErrors(error)
+
+  if (household.myRole !== 'owner') {
+    return (
+      <div className="flex flex-col gap-1">
+        <h2 className="num text-lg">{household.name}</h2>
+        <p className="text-ink-2">Usual way to split: {SPLITS.find(([v]) => v === household.defaultSplitMethod)?.[1] ?? household.defaultSplitMethod}. Only the owner can change this.</p>
+      </div>
+    )
+  }
+
+  async function save(e) {
+    e.preventDefault()
+    const body = {
+      ...(name.trim() !== household.name && { name: name.trim() }),
+      ...(split !== household.defaultSplitMethod && { defaultSplitMethod: split }),
+    }
+    if (Object.keys(body).length === 0) return toast('Nothing to save.')
+    setBusy(true)
+    setError(null)
+    try {
+      await updateHousehold(household.id, body)
+      await Promise.all([queryClient.invalidateQueries({ queryKey: ['households'] }), queryClient.invalidateQueries({ queryKey: ['household', household.id] })])
+      toast('Household updated.')
+    } catch (err) {
+      setError(err)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <form onSubmit={save} noValidate className="flex flex-col gap-3">
+      <h2 className="num text-lg">Your household</h2>
+      <Field label="Household name" value={name} maxLength={80} onChange={(e) => setName(e.target.value)} error={fields.name} />
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="usual-split" className="text-ink-2">Usual way to split</label>
+        <select id="usual-split" value={split} onChange={(e) => setSplit(e.target.value)} className="min-h-12 rounded-xl border border-ink-2/40 bg-panel px-3 text-ink">
+          {SPLITS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+        </select>
+      </div>
+      {error && !fields.name && <p role="alert" className="text-owe">{error.message}</p>}
+      <div><Button type="submit" disabled={busy}>{busy ? 'Saving…' : 'Save changes'}</Button></div>
+    </form>
+  )
+}
 
 function Members({ householdId }) {
   const { data, isPending, error, refetch } = useHousehold(householdId)
@@ -85,7 +145,8 @@ export default function Settings() {
       <h1 className="enter-fade num text-2xl">Settings</h1>
 
       <Panel style={stagger(0)} className="enter flex flex-col gap-3">
-        <h2 className="num text-lg">{household.name}</h2>
+        <HouseholdDetails household={household} />
+        <h3 className="num pt-2 text-base">Members</h3>
         <Members householdId={household.id} />
       </Panel>
 

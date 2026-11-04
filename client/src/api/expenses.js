@@ -34,10 +34,27 @@ export const createExpense = (householdId, body, idempotencyKey) =>
 export const reverseExpense = (householdId, expenseId, reason) =>
   request(`${base(householdId)}/expenses/${expenseId}/reverse`, { method: 'POST', body: { reason } }).then(({ data }) => data.expense)
 
+// Every change is recorded: who did it, when and why. The key sits under ['expense', household, id] so one
+// invalidation of the expense also refreshes its history.
+export const useExpenseHistory = (householdId, expenseId) =>
+  useQuery({ queryKey: ['expense', householdId, expenseId, 'history'], enabled: Boolean(householdId && expenseId), queryFn: async () => (await request(`${base(householdId)}/expenses/${expenseId}/history`)).data.history })
+
+// An edit sends the whole expense and the version that was edited; a stale version is refused with 409 STALE_VERSION.
+export const updateExpense = (householdId, expenseId, body) =>
+  request(`${base(householdId)}/expenses/${expenseId}`, { method: 'PATCH', body }).then(({ data }) => data.expense)
+
+export const disputeExpense = (householdId, expenseId, reason) =>
+  request(`${base(householdId)}/expenses/${expenseId}/dispute`, { method: 'POST', body: { reason } }).then(({ data }) => data.expense)
+
+export const withdrawDispute = (householdId, expenseId) =>
+  request(`${base(householdId)}/expenses/${expenseId}/dispute/withdraw`, { method: 'POST' }).then(({ data }) => data.expense)
+
 // Anything that changes money makes every cached balance and list stale.
 export const refreshMoney = (queryClient, householdId) =>
   Promise.all([
     queryClient.invalidateQueries({ queryKey: ['balances', householdId] }),
     queryClient.invalidateQueries({ queryKey: ['expenses', householdId] }),
     queryClient.invalidateQueries({ queryKey: ['expense', householdId] }),
+    queryClient.invalidateQueries({ queryKey: ['suggestions', householdId] }),
+    queryClient.invalidateQueries({ queryKey: ['ledger', householdId] }),
   ])

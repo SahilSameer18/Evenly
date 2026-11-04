@@ -1,6 +1,7 @@
 import { Link, useOutletContext } from 'react-router'
 import { useBalances, useExpenses } from '../api/expenses.js'
 import { useHousehold } from '../api/households.js'
+import { usePendingSettlements } from '../api/settlements.js'
 import { useAuth } from '../auth/context.js'
 import { Button } from '../components/Button.jsx'
 import { ExpenseRow } from '../components/ExpenseRow.jsx'
@@ -9,6 +10,7 @@ import { Panel, Skeleton } from '../components/Panel.jsx'
 import { EmptyState, ErrorState } from '../components/States.jsx'
 import { formatMoney } from '../lib/money.js'
 import { stagger } from '../lib/motion.js'
+import { splitPending } from '../lib/settle.js'
 import { useCountUp } from '../lib/useCountUp.js'
 
 // The balance in words: with exactly one other person it names them, otherwise it speaks in total.
@@ -19,7 +21,7 @@ function summary(net, others) {
   return { label: owed ? (one ? `${one} owes you` : 'You are owed in total') : (one ? `You owe ${one}` : 'You owe in total'), tone: owed ? 'owed' : 'owe' }
 }
 
-function Hero({ balances, userId }) {
+function Hero({ balances, userId, waiting }) {
   const me = balances.members.find((m) => m.userId === userId)
   const others = balances.members.filter((m) => m.userId !== userId && m.active)
   const { label, tone } = summary(me.netMinor, others)
@@ -38,6 +40,14 @@ function Hero({ balances, userId }) {
         <div><dt className="text-hero-ink-2">You paid</dt><dd className="num text-lg">{formatMoney(me.paidMinor)}</dd></div>
         <div><dt className="text-hero-ink-2">Your share</dt><dd className="num text-lg">{formatMoney(me.shareMinor)}</dd></div>
       </dl>
+      <div style={stagger(3)} className="enter mt-4 flex flex-wrap items-center gap-3">
+        <Link to="/settle" className="inline-flex min-h-11 items-center rounded-full bg-hero-ink px-5 font-medium text-dark transition-transform duration-100 active:scale-[0.97]">Settle up</Link>
+        {waiting > 0 && (
+          <Link to="/settle" className="inline-flex min-h-11 items-center gap-1.5 text-hero-pending underline">
+            <Icon name="clock" size={16} />{waiting === 1 ? '1 repayment waiting for your answer' : `${waiting} repayments waiting for your answer`}
+          </Link>
+        )}
+      </div>
     </section>
   )
 }
@@ -48,6 +58,8 @@ export default function Overview() {
   const balances = useBalances(household.id)
   const recent = useExpenses(household.id, { limit: 5 })
   const people = useHousehold(household.id)
+  const pending = usePendingSettlements(household.id)
+  const waiting = splitPending(pending.data ?? [], user.id).toAnswer.length
   const nameOf = (id) => people.data?.members.find((m) => m.userId === id)?.name ?? 'Someone'
   const items = recent.data?.pages[0].expenses ?? []
 
@@ -66,7 +78,7 @@ export default function Overview() {
       </div>
 
       <div className="flex flex-col gap-5 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6">
-        {balances.isPending ? <Skeleton className="h-52" /> : balances.error ? <ErrorState error={balances.error} onRetry={balances.refetch} /> : <Hero balances={balances.data} userId={user.id} />}
+        {balances.isPending ? <Skeleton className="h-52" /> : balances.error ? <ErrorState error={balances.error} onRetry={balances.refetch} /> : <Hero balances={balances.data} userId={user.id} waiting={waiting} />}
 
         <section aria-label="Recent expenses">
           <div className="mb-2 flex items-center justify-between">

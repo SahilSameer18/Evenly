@@ -48,13 +48,11 @@ describe('Landing page', () => {
     expect(within(sample).getAllByText('you owe').length).toBeGreaterThan(0)
   })
 
-  it('does not promise repayments as if they already worked: both mentions carry a Soon tag', () => {
+  it('describes repayments as working, with no Soon tags left', () => {
     page()
-    const tagged = ['Pay each other back', 'Repayments you both confirm']
-    for (const title of tagged) {
-      const heading = screen.getByRole('heading', { level: 3, name: new RegExp(title) })
-      expect(within(heading).getByText('Soon')).toBeInTheDocument()
-    }
+    expect(screen.queryByText('Soon')).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 3, name: 'Pay each other back' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 3, name: 'Repayments you both confirm' })).toBeInTheDocument()
   })
 
   it('answers the questions without JavaScript, using native details elements', () => {

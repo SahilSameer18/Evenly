@@ -27,6 +27,13 @@ export function groupAmountText(text) {
   return fraction === undefined ? grouped : `${grouped}.${fraction}`
 }
 
+/** Paise back to the text the amount box edits: 30000 -> "300", 30050 -> "300.50". */
+export function minorToAmountText(minor) {
+  const whole = Math.floor(minor / 100)
+  const paise = minor % 100
+  return paise === 0 ? String(whole) : `${whole}.${String(paise).padStart(2, '0')}`
+}
+
 /** Typed amount to paise; 0 when it is empty or not a number yet. */
 export function amountToMinor(text) {
   try {
