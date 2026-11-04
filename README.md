@@ -27,7 +27,7 @@ Shared-expense tracker for roommates. Every balance is computed from recorded tr
 | Expenses | Create shared (equal, exact, percentage or weighted split), personal (private to its creator) and on-behalf expenses. Retries are safe: an `Idempotency-Key` makes a double tap create exactly one expense. List with filters and cursor pagination, and detail by id. Every create writes the expense, its splits and an audit event in one transaction. See [ADR 004](docs/ADR/004-idempotency-strategy.md). |
 | Expense corrections | Edit (guarded by a version, so two simultaneous edits cannot overwrite each other), reverse (the row is kept and balances update), partial refunds shared back pro rata, disputes with a reason, and a per-expense history from the audit trail. Only the person who recorded an expense can edit or reverse it. See [ADR 006](docs/ADR/006-expense-lifecycle.md). |
 | Repayments and balances | Record a repayment (pending until the person being paid confirms it; they can also reject it, and the sender can cancel). Balances, a chronological ledger with every member's running balance, and settlement suggestions are all computed from the stored records, never stored. Creating an expense or confirming a repayment returns `balanceAfter`, and the books are re-checked after every money-changing write. Leaving is blocked while a repayment is pending. See [ADR 007](docs/ADR/007-settlements-and-balances.md). |
-| UI | Not built yet. |
+| Client (foundation) | Sign up, log in (the session survives a reload), create a household, invite a roommate by single-use link, accept an invitation, see members, switch theme. Phone layout with a bottom bar and a desktop layout with a sidebar. The design is written up in [DESIGN.md](docs/DESIGN.md). The money screens (overview, add expense, expense list) are next. |
 
 ## How a request is handled
 
@@ -216,7 +216,7 @@ erDiagram
 
 | Layer | Choice |
 |---|---|
-| Client | React, Vite, Tailwind CSS (scaffold only so far) |
+| Client | React 19 with the React Compiler, Vite, Tailwind CSS 4, React Router, TanStack Query, Vitest |
 | Server | Node.js, Express 5 (JavaScript, ES modules), Zod |
 | Database | PostgreSQL on Neon, via Prisma 7 |
 | Auth | Argon2id, `jose` (JWT), opaque hashed refresh tokens |
@@ -273,7 +273,7 @@ npm run dev
 
 Run `npx prisma generate` again after any schema change or `npm install`, or the client will not know about new tables.
 
-The client is a scaffold: `cd client && npm install && npm run dev`.
+Run the client with the server already running: `cd client && npm install && npm run dev`. Vite forwards `/api` to the server on port 5000, so the browser only talks to one origin. Client tests: `cd client && npm test`.
 
 ## Tests
 

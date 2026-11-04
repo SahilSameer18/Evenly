@@ -38,7 +38,8 @@ Part 1 gate	Met, with three gaps	Two real users sign up, share a household and a
 2.1	Done	Expense create and read API: four split methods, personal and on-behalf types, idempotency keys, one-transaction writes with an audit event, filters and cursor pagination, private personal expenses (ADR 004).
 2.2	Done	Edit with optimistic locking, reverse, refund (new refund type, positive amounts), dispute, history; every change locks the row and writes an audit event (ADR 006).
 2.3	Done	Repayments (pending until the recipient confirms; reject, cancel), balances, ledger with running balances, settlement suggestions, balanceAfter, runtime reconciliation, leave blocked by pending repayments (ADR 007). The blueprint's worked example (+300 / -300) reproduces through the API.
-2.4 onward	Not started	Next: the frontend (2.4 and 2.5), then deploy (2.6).
+2.4.1 to 2.4.4	Done	Frontend foundation using docs/DESIGN.md (not the blueprint's design): Vite proxy, API client with refresh-once and retry rules, in-memory auth with session restore, shell (phone bar, desktop sidebar), login, register, invitation accept, create household, invite link, members, settings and theme. 46 unit tests; about 123 KB gzipped JavaScript.
+2.4.5 onward	Not started	Next: the money screens (overview, add-expense sheet, expense list and detail), then 2.5 (settle UI) and deploy (2.6).
 
 Where the build differs from this plan
 - 2.3: refund responses also carry balanceAfter; dispute and withdraw skip the reconciliation check (they change no number); pending repayments cannot be edited, only cancelled; any amount is allowed; a pending repayment blocks leaving.
