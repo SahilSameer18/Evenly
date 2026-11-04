@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { Icon } from './Icon.jsx'
 
 // A bottom sheet on phones and a side panel on desktop. The native <dialog> gives focus trapping and Escape for free.
+// Tall content scrolls inside it, so a short screen (a phone on its side) can still reach everything.
 export function Sheet({ open, onClose, title, children }) {
   const ref = useRef(null)
 
@@ -16,9 +17,9 @@ export function Sheet({ open, onClose, title, children }) {
       ref={ref}
       onClose={onClose}
       onClick={(e) => e.target === ref.current && onClose()}
-      className="m-0 mt-auto h-auto max-h-[90dvh] w-full max-w-none rounded-t-[28px] border border-edge bg-bg p-5 text-ink backdrop:bg-black/60 md:ml-auto md:mt-0 md:h-dvh md:max-h-none md:w-[420px] md:rounded-none"
+      className="m-0 mt-auto h-auto max-h-[92dvh] w-full max-w-none overflow-y-auto overscroll-contain rounded-t-[28px] border border-edge bg-bg p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] text-ink backdrop:bg-black/60 sm:p-5 md:ml-auto md:mt-0 md:h-dvh md:max-h-none md:w-[420px] md:rounded-none xl:w-[460px]"
     >
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-3 flex items-center justify-between">
         <h2 className="num text-xl">{title}</h2>
         <button type="button" onClick={onClose} aria-label="Close" className="inline-flex size-11 items-center justify-center rounded-full text-ink-2">
           <Icon name="x" />

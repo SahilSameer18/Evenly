@@ -11,6 +11,10 @@ const PATHS = {
   clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
   'arrow-up-right': <path d="M7 17 17 7M8 7h9v9" />,
   'log-out': <path d="M10 4H5v16h5M15 8l4 4-4 4M19 12H9" />,
+  backspace: <path d="M21 5H9l-6 7 6 7h12zM17 9l-4 6M13 9l4 6" />,
+  search: <><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></>,
+  'chevron-left': <path d="m15 5-7 7 7 7" />,
+  refresh: <path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7" />,
   alert: <><circle cx="12" cy="12" r="9" /><path d="M12 8v5M12 16.5v.01" /></>,
 }
 

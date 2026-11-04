@@ -3,8 +3,10 @@ export function Panel({ as: Tag = 'div', className = '', ...props }) {
   return <Tag className={`rounded-[22px] border border-edge bg-panel p-4 ${className}`} {...props} />
 }
 
-export function Chip({ icon, children }) {
-  return <span className="inline-flex items-center gap-1.5 rounded-full bg-pending-bg px-2.5 py-0.5 text-xs text-pending">{icon}{children}</span>
+const TONES = { pending: 'bg-pending-bg text-pending', quiet: 'border border-edge text-ink-2' }
+
+export function Chip({ icon, tone = 'pending', children }) {
+  return <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs ${TONES[tone]}`}>{icon}{children}</span>
 }
 
 export function Avatar({ name, size = 36 }) {

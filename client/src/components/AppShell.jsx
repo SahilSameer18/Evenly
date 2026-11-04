@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { Link, Navigate, NavLink, Outlet } from 'react-router'
+import { useQueryClient } from '@tanstack/react-query'
+import { reverseExpense, refreshMoney } from '../api/expenses.js'
 import { useMyHousehold } from '../api/households.js'
 import { useAuth } from '../auth/context.js'
+import { AddExpenseSheet } from './AddExpenseSheet.jsx'
 import { Icon } from './Icon.jsx'
-import { Button } from './Button.jsx'
 import { Avatar, Skeleton } from './Panel.jsx'
 import { ErrorState } from './States.jsx'
-import { Sheet } from './Sheet.jsx'
+import { useToast } from './toast.js'
 
 const LINKS = [
   { to: '/', label: 'Home', icon: 'home', end: true },
@@ -14,35 +16,58 @@ const LINKS = [
   { to: '/settle', label: 'Settle', icon: 'swap' },
 ]
 
-const linkClass = ({ isActive }) => `flex min-h-11 min-w-11 flex-col items-center justify-center gap-0.5 text-xs md:flex-row md:justify-start md:gap-3 md:rounded-xl md:px-3 md:text-sm ${isActive ? 'text-ink md:bg-panel' : 'text-ink-2'}`
+// Phone: icon over label in the bottom bar. Tablet (md): icons only in the sidebar. Desktop (lg): icon and label.
+const linkClass = ({ isActive }) => `flex min-h-11 min-w-11 flex-col items-center justify-center gap-0.5 text-xs md:size-11 md:flex-row md:justify-center md:self-center md:rounded-xl lg:size-auto lg:w-full lg:justify-start lg:gap-3 lg:px-3 lg:text-sm ${isActive ? 'text-ink md:bg-panel' : 'text-ink-2'}`
+const label = 'md:sr-only lg:not-sr-only'
 
 export function AppShell() {
   const { household, isPending, error, refetch } = useMyHousehold()
   const { user } = useAuth()
+  const toast = useToast()
+  const queryClient = useQueryClient()
   const [adding, setAdding] = useState(false)
 
   if (isPending) return <main className="mx-auto max-w-[960px] p-4"><Skeleton className="h-44" /></main>
   if (error) return <main className="mx-auto max-w-[960px] p-4"><ErrorState error={error} onRetry={refetch} /></main>
   if (!household) return <Navigate to="/household/new" replace />
 
+  // Undo reverses the expense that was just added: nothing is ever deleted, so it stays in the history as reversed.
+  function saved(expense) {
+    setAdding(false)
+    toast('Expense added', {
+      label: 'Undo',
+      onClick: async () => {
+        try {
+          await reverseExpense(household.id, expense.id, 'Undone right after adding')
+          await refreshMoney(queryClient, household.id)
+          toast('Expense undone')
+        } catch (err) {
+          toast(err.message)
+        }
+      },
+    })
+  }
+
   return (
     <div className="md:flex">
-      <aside className="hidden w-56 shrink-0 flex-col gap-1 border-r border-edge p-4 md:sticky md:top-0 md:flex md:h-dvh">
-        <p className="num px-3 pb-3 text-lg">Evenly</p>
-        <Button onClick={() => setAdding(true)} className="mb-3 bg-owed-fill text-on-owed"><Icon name="plus" />Add expense</Button>
+      <aside className="hidden shrink-0 flex-col gap-1 border-r border-edge p-3 md:sticky md:top-0 md:flex md:h-dvh md:w-[4.5rem] lg:w-56 lg:p-4">
+        <p className="num px-1 pb-3 text-center text-lg lg:px-3 lg:text-left"><span className="lg:hidden" aria-hidden="true">E</span><span className="max-lg:sr-only">Evenly</span></p>
+        <button type="button" onClick={() => setAdding(true)} aria-label="Add expense" className="mb-3 inline-flex size-11 items-center justify-center gap-2 self-center rounded-full bg-owed-fill font-medium text-on-owed lg:size-auto lg:min-h-11 lg:w-full lg:self-stretch">
+          <Icon name="plus" /><span className="max-lg:sr-only">Add expense</span>
+        </button>
         {LINKS.map((l) => (
-          <NavLink key={l.to} to={l.to} end={l.end} className={linkClass}><Icon name={l.icon} />{l.label}</NavLink>
+          <NavLink key={l.to} to={l.to} end={l.end} aria-label={l.label} className={linkClass}><Icon name={l.icon} /><span className={label}>{l.label}</span></NavLink>
         ))}
-        <NavLink to="/settings" className={`${linkClass({ isActive: false })} mt-auto`}><Avatar name={user.name} size={28} />Settings</NavLink>
+        <NavLink to="/settings" aria-label="Settings" className={`${linkClass({ isActive: false })} mt-auto`}><Avatar name={user.name} size={28} /><span className={label}>Settings</span></NavLink>
       </aside>
 
       <div className="min-w-0 flex-1">
         <header className="flex items-center justify-between px-4 pt-4 md:hidden">
-          <p className="num text-lg">{household.name}</p>
-          <Link to="/settings" aria-label="Settings"><Avatar name={user.name} /></Link>
+          <p className="num min-w-0 truncate text-lg">{household.name}</p>
+          <Link to="/settings" aria-label="Settings" className="ml-3 inline-flex size-11 shrink-0 items-center justify-center"><Avatar name={user.name} /></Link>
         </header>
-        <main className="mx-auto max-w-[960px] px-4 pb-28 pt-4 md:px-8 md:pb-8 md:pt-8">
-          <Outlet context={{ household }} />
+        <main className="mx-auto max-w-[960px] px-4 pb-28 pt-4 sm:px-6 md:px-8 md:pb-10 md:pt-8 xl:max-w-[1100px] 2xl:max-w-[1200px]">
+          <Outlet context={{ household, openAdd: () => setAdding(true) }} />
         </main>
       </div>
 
@@ -53,9 +78,7 @@ export function AppShell() {
         <NavLink to="/settle" className={linkClass}><Icon name="swap" />Settle</NavLink>
       </nav>
 
-      <Sheet open={adding} onClose={() => setAdding(false)} title="Add expense">
-        <p className="text-ink-2">Recording expenses arrives in the next build. Your household is ready for it.</p>
-      </Sheet>
+      <AddExpenseSheet open={adding} onClose={() => setAdding(false)} household={household} onSaved={saved} />
     </div>
   )
 }

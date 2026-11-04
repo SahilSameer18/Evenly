@@ -20,6 +20,11 @@
   --action: #f5f1ec;
   --on-action: #1a1613;
   --on-owed: #1a1613;
+  /* The balance card is dark in both themes, so its text colours do not change with the theme. */
+  --hero-ink: #f5f1ec;
+  --hero-ink-2: #b8afa6;
+  --hero-owed: #d8f04a;
+  --hero-owe: #ff8f5c;
   color-scheme: dark;
 }
 
@@ -72,6 +77,10 @@
   --color-action: var(--action);
   --color-on-action: var(--on-action);
   --color-on-owed: var(--on-owed);
+  --color-hero-ink: var(--hero-ink);
+  --color-hero-ink-2: var(--hero-ink-2);
+  --color-hero-owed: var(--hero-owed);
+  --color-hero-owe: var(--hero-owe);
   --font-display: "Syne", system-ui, sans-serif;
   --font-sans: "Plus Jakarta Sans", system-ui, sans-serif;
 }

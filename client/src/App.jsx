@@ -5,9 +5,12 @@ import { AuthProvider } from './auth/AuthProvider.jsx'
 import { GuestOnly, RequireAuth } from './auth/RequireAuth.jsx'
 import { AppShell } from './components/AppShell.jsx'
 import { ToastProvider } from './components/ToastProvider.jsx'
-import { Expenses, Home, Settle } from './pages/Placeholders.jsx'
+import { Settle } from './pages/Placeholders.jsx'
 
 // Screens load on demand, so the first visit downloads only what it needs.
+const Overview = lazy(() => import('./pages/Overview.jsx'))
+const Expenses = lazy(() => import('./pages/Expenses.jsx'))
+const ExpenseDetail = lazy(() => import('./pages/ExpenseDetail.jsx'))
 const Login = lazy(() => import('./pages/Login.jsx'))
 const Register = lazy(() => import('./pages/Register.jsx'))
 const Invite = lazy(() => import('./pages/Invite.jsx'))
@@ -30,8 +33,8 @@ const router = createBrowserRouter([
       {
         element: <AppShell />,
         children: [
-          { path: '/', element: <Home /> },
-          { path: '/expenses', element: <Expenses /> },
+          { path: '/', element: <Overview /> },
+          { path: '/expenses', element: <Expenses />, children: [{ path: ':expenseId', element: <ExpenseDetail /> }] },
           { path: '/settle', element: <Settle /> },
           { path: '/settings', element: <Settings /> },
         ],

@@ -34,7 +34,7 @@ export default function Login() {
         <Field label="Password" name="password" type="password" autoComplete="current-password" required error={fields.password} />
         <Button type="submit" disabled={busy}>{busy ? 'Logging in…' : 'Log in'}</Button>
       </form>
-      <p className="text-ink-2">New here? <Link to="/register" className="text-ink underline">Create an account</Link></p>
+      <p className="flex flex-wrap items-center gap-x-2 text-ink-2">New here? <Link to="/register" className="inline-flex min-h-11 items-center text-ink underline">Create an account</Link></p>
     </AuthLayout>
   )
 }

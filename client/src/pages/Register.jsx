@@ -35,7 +35,7 @@ export default function Register() {
         <Field label="Password" name="password" type="password" autoComplete="new-password" required hint="At least 8 characters." error={fields.password} />
         <Button type="submit" disabled={busy}>{busy ? 'Creating…' : 'Create account'}</Button>
       </form>
-      <p className="text-ink-2">Already have an account? <Link to="/login" className="text-ink underline">Log in</Link></p>
+      <p className="flex flex-wrap items-center gap-x-2 text-ink-2">Already have an account? <Link to="/login" className="inline-flex min-h-11 items-center text-ink underline">Log in</Link></p>
     </AuthLayout>
   )
 }
