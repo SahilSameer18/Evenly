@@ -112,9 +112,15 @@ Desktop is the responsive extension of the phone design: same colours, type and 
 
 ## Motion
 
-- Only `transform` and `opacity`, 120 to 200 ms, ease-out.
-- Nothing loops. Skeletons are static blocks that fade in and out once when data arrives.
-- `prefers-reduced-motion` removes all motion except instant state changes.
+- Only `transform` and `opacity`, one-shot, 100 to 320 ms (entrances 240 to 320 ms, button press 100 ms, colour changes 150 ms), ease-out. Nothing loops (a test fails if the stylesheet contains `infinite`, and another if a keyframe animates anything but `opacity` and `transform`).
+- Classes in `index.css`: `.enter` (rise), `.enter-fade`, `.enter-pop`, `.toast`; `stagger(i)` sets the list position (capped at 8 so long lists never wait). Fill mode is `backwards`, so nothing is left animating afterwards.
+- Every page eases in on navigation; lists stagger their first rows; the add sheet slides up on phones and in from the right on wider screens (closing is instant); steps of the add flow rise in; buttons shrink slightly when pressed; the Overview balance counts up once.
+- The count-up must never leave a wrong number on screen: it is instant for reduced motion and hidden tabs (animation frames do not run there), and a timer guarantees it lands on the real value.
+- `prefers-reduced-motion` removes all motion and delays. Skeletons are static.
+
+## Fixed top bars
+
+The landing header and the phone header inside the app are `position: sticky` at the top. They are transparent over the page glow and turn solid with a hairline edge once the page has scrolled, detected with an `IntersectionObserver` on a 1 px marker (no scroll listener). No blur, no shadow. The desktop sidebar is already fixed.
 
 ## Performance and battery (rules, not wishes)
 
@@ -137,6 +143,10 @@ Budgets, measured before the MVP gate: initial JavaScript under 150 KB gzipped, 
 - Every input has a label. Errors are text next to the field, not colour alone.
 - Icon-only buttons have an accessible name.
 - Screen readers read amounts as words ("1,250 rupees, you lent").
+
+## Landing page (the front door at `/` for signed-out visitors)
+
+One static, lazy-loaded page in the same look: header, hero with a sample balance card (tagged "Example"), how it works in three steps, six features, "Numbers you can check" with a worked ₹100.01 split, four questions (native `<details>`, no JavaScript), a closing call to action, and a footer crediting the author. Content sits in a centred column of at most 1120 px. It uses no images, animation, API calls or third-party scripts. Rule for the copy: every claim must be true of the product today. Repayments are built on the server but their screens are not, so both mentions carry a "Soon" tag: remove it when the Settle screen ships (phase 2.5). The Indian-rupees-only line must be revisited if other currencies are added.
 
 ## Not in v1
 
