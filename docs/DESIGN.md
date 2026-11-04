@@ -144,6 +144,15 @@ Budgets, measured before the MVP gate: initial JavaScript under 150 KB gzipped, 
 - Icon-only buttons have an accessible name.
 - Screen readers read amounts as words ("1,250 rupees, you lent").
 
+## Settle, repayments and expense actions
+
+- **Settle screen:** "Who owes whom" (the server's suggestions: a payer gets a "Record repayment" button prefilled; a payee sees "Waiting for Bob"), "Needs your answer" (Confirm it arrived, Reject with an optional reason, Cancel for your own), "How it is calculated" (Paid − Share + Sent − Received = Net, and every ledger entry with its effect on you and your balance after it, "Not counted" for pending, rejected and reversed), and the repayment history. Two columns from 1024 px.
+- **Words, never colour alone:** every balance has a sign or words ("You pay Bob J ₹75", "+₹375", "You are owed ₹375"). Pending is amber with a clock; a finished repayment shows a status chip (Confirmed, Rejected, Cancelled), and rejected or cancelled amounts are struck through.
+- **Nudges:** the Overview hero has a "Settle up" button and, when something waits, an amber "N repayments waiting for your answer" link; the Settle tab (bottom bar and sidebar) shows a small amber dot with an accessible name.
+- **Expense actions** appear only when they will work (the server still decides): the recorder can Edit and Reverse; anyone else can Dispute; the person who raised a dispute can Withdraw it; a reversed expense offers nothing. Reverse and Dispute ask for a reason (1 to 300 characters, with a counter). Editing reuses the add sheet; a stale version shows "Someone else changed this" with a Reload button. A History section lists who did what, when, why and what changed.
+- **Household settings:** the owner edits the name and the usual split; members see them read-only.
+- **Home screen:** `manifest.webmanifest` (standalone, charcoal), 192 and 512 icons, a maskable icon and an Apple touch icon. The icons are a simple generated "E" mark, a stand-in for a designed logo; full PWA behaviour is Part 3.
+
 ## Sign-in and sign-up card (`/login` and `/register`)
 
 One card shared by both addresses (it stays mounted, so the animation can play). On wide screens (768 px and up) it has two halves: a form and a strongly contrasting panel (cream in the dark theme, dark in the light theme). Pressing "Create an account" or "Log in" slides the panel (transform only, 500 ms, one-shot) to the other half and reveals the other form; the inactive form is `inert`, and focus moves to the first field of the form that appears. On phones the active form is shown on its own and pops in, with a switch link below. The panel carries the example balance card, three true points (whole paise, private personal expenses, every change recorded) and the switch button. Fields have a visible edge (`ink-2` at 40%), a leading icon, a placeholder, and the password field has a show/hide button; the register form has a live "8 or more characters" hint that becomes "Good" with a tick. No social sign-in and no "forgot password" (Evenly has neither; nothing is faked). The invitation and household-setup screens still use the single-panel layout.
