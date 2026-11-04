@@ -11,8 +11,7 @@ import { Settle } from './pages/Placeholders.jsx'
 const Overview = lazy(() => import('./pages/Overview.jsx'))
 const Expenses = lazy(() => import('./pages/Expenses.jsx'))
 const ExpenseDetail = lazy(() => import('./pages/ExpenseDetail.jsx'))
-const Login = lazy(() => import('./pages/Login.jsx'))
-const Register = lazy(() => import('./pages/Register.jsx'))
+const AuthCard = lazy(() => import('./pages/AuthCard.jsx'))
 const Invite = lazy(() => import('./pages/Invite.jsx'))
 const CreateHousehold = lazy(() => import('./pages/CreateHousehold.jsx'))
 const Settings = lazy(() => import('./pages/Settings.jsx'))
@@ -23,7 +22,8 @@ const queryClient = new QueryClient({
 })
 
 const router = createBrowserRouter([
-  { element: <GuestOnly />, children: [{ path: '/login', element: <Login /> }, { path: '/register', element: <Register /> }] },
+  // One card for both addresses: it stays mounted when moving between them, so the panel can slide.
+  { element: <GuestOnly />, children: [{ element: <AuthCard />, children: [{ path: '/login' }, { path: '/register' }] }] },
   // Works signed out: the visitor is sent to log in or register and brought back.
   { path: '/invite/:token', element: <Invite /> },
   {
