@@ -21,6 +21,7 @@ const PATHS = {
   backspace:<path d="M21 5H9l-6 7 6 7h12zM17 9l-4 6M13 9l4 6" />,
   search: <><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></>,
   'chevron-left': <path d="m15 5-7 7 7 7" />,
+  bars: <path d="M5 20v-8M12 20V4M19 20v-5" />,
   refresh: <path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7" />,
   alert: <><circle cx="12" cy="12" r="9" /><path d="M12 8v5M12 16.5v.01" /></>,
 }

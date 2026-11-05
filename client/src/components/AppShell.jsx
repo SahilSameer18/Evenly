@@ -18,6 +18,7 @@ const LINKS = [
   { to: '/', label: 'Home', icon: 'home', end: true },
   { to: '/expenses', label: 'Spend', icon: 'receipt' },
   { to: '/settle', label: 'Settle', icon: 'swap' },
+  { to: '/report', label: 'Report', icon: 'bars' },
 ]
 
 // Phone: icon over label in the bottom bar. Tablet (md): icons only in the sidebar. Desktop (lg): icon and label.

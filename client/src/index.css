@@ -69,6 +69,7 @@
 
 @theme inline {
   --color-bg: var(--bg);
+  --color-menu: var(--menu);
   --color-panel: var(--panel);
   --color-edge: var(--panel-edge);
   --color-ink: var(--ink);
@@ -147,12 +148,16 @@ select option {
 @keyframes sheet-side { from { transform: translateX(100%); } to { transform: none; } }
 @keyframes toast-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 @keyframes fill { from { transform: scaleX(0); } to { transform: none; } }
+@keyframes grow { from { transform: scaleY(0); } to { transform: none; } }
 
 /* --i is the position in a list (capped at 8 by stagger()), so a long list never makes anyone wait. */
 .enter { animation: rise 320ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards; animation-delay: calc(var(--i, 0) * 40ms); }
 .enter-fade { animation: fade 240ms ease-out backwards; animation-delay: calc(var(--i, 0) * 40ms); }
 .enter-pop { animation: pop 280ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards; animation-delay: calc(var(--i, 0) * 40ms); }
 .toast { animation: toast-in 220ms ease-out backwards; }
+/* Chart bars grow once from their baseline: columns upwards, horizontal bars from the left. */
+.grow { transform-origin: bottom; animation: grow 360ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards; animation-delay: calc(var(--i, 0) * 40ms); }
+.grow-x { transform-origin: left; animation: fill 360ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards; animation-delay: calc(var(--i, 0) * 40ms); }
 /* The waiting bar fills once over the longest wake-up we expect, easing off so it never looks stuck at the end. */
 .fill { animation: fill 45s cubic-bezier(0.1, 0.5, 0.3, 1) backwards; }
 /* On phones the sign-in card shows one form at a time, so a switch pops the new form in; wider screens slide a panel instead. */

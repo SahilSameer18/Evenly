@@ -18,6 +18,7 @@ const Invite = lazy(() => import('./pages/Invite.jsx'))
 const CreateHousehold = lazy(() => import('./pages/CreateHousehold.jsx'))
 const Settings = lazy(() => import('./pages/Settings.jsx'))
 const NotFound = lazy(() => import('./pages/NotFound.jsx'))
+const Report = lazy(() => import('./pages/Report.jsx'))
 
 // Reads are cached for 30 s and never refetched just because the window regained focus (network and battery).
 const queryClient = new QueryClient({
@@ -42,6 +43,7 @@ const router = createBrowserRouter([{
             { path: '/', element: <Overview /> },
             { path: '/expenses', element: <Expenses />, children: [{ path: ':expenseId', element: <ExpenseDetail /> }] },
             { path: '/settle', element: <Settle /> },
+            { path: '/report', element: <Report /> },
             { path: '/settings', element: <Settings /> },
           ],
         },

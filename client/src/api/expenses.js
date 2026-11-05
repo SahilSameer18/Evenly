@@ -57,4 +57,5 @@ export const refreshMoney = (queryClient, householdId) =>
     queryClient.invalidateQueries({ queryKey: ['expense', householdId] }),
     queryClient.invalidateQueries({ queryKey: ['suggestions', householdId] }),
     queryClient.invalidateQueries({ queryKey: ['ledger', householdId] }),
+    queryClient.invalidateQueries({ queryKey: ['report', householdId] }),
   ])

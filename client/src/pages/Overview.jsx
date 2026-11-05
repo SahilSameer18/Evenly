@@ -1,13 +1,16 @@
 import { Link, useOutletContext } from 'react-router'
 import { useBalances, useExpenses } from '../api/expenses.js'
 import { useHousehold } from '../api/households.js'
-import { usePendingSettlements } from '../api/settlements.js'
+import { useLedger, usePendingSettlements } from '../api/settlements.js'
 import { useAuth } from '../auth/context.js'
+import { BalanceTrend } from '../components/charts/BalanceTrend.jsx'
+import { PaidShareBars } from '../components/charts/PaidShareBars.jsx'
 import { Button } from '../components/Button.jsx'
 import { ExpenseRow } from '../components/ExpenseRow.jsx'
 import { Icon } from '../components/Icon.jsx'
 import { Panel, Skeleton } from '../components/Panel.jsx'
 import { EmptyState, ErrorState } from '../components/States.jsx'
+import { balanceSeries } from '../lib/charts.js'
 import { formatMoney } from '../lib/money.js'
 import { stagger } from '../lib/motion.js'
 import { splitPending } from '../lib/settle.js'
@@ -59,6 +62,7 @@ export default function Overview() {
   const recent = useExpenses(household.id, { limit: 5 })
   const people = useHousehold(household.id)
   const pending = usePendingSettlements(household.id)
+  const ledger = useLedger(household.id)
   const waiting = splitPending(pending.data ?? [], user.id).toAnswer.length
   const nameOf = (id) => people.data?.members.find((m) => m.userId === id)?.name ?? 'Someone'
   const items = recent.data?.pages[0].expenses ?? []
@@ -100,6 +104,19 @@ export default function Overview() {
           )}
         </section>
       </div>
+
+      {items.length > 0 && (
+        <section aria-label="Insights" className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <h2 className="num text-lg">Insights</h2>
+            <Link to="/report" className="inline-flex min-h-11 items-center gap-1.5 text-ink-2 underline"><Icon name="bars" size={16} />Monthly report</Link>
+          </div>
+          <div className="flex flex-col gap-5 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6">
+            {ledger.isPending ? <Skeleton className="h-64" /> : ledger.error ? <ErrorState error={ledger.error} onRetry={ledger.refetch} /> : <BalanceTrend points={balanceSeries(ledger.data, user.id)} subtitle="After each expense and repayment" />}
+            {balances.data ? <PaidShareBars members={balances.data.members} subtitle="Since you started" /> : <Skeleton className="h-64" />}
+          </div>
+        </section>
+      )}
     </div>
   )
 }

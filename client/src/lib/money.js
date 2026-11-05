@@ -9,6 +9,11 @@ export const formatMoney = (minor) => (minor % 100 === 0 ? whole : withPaise).fo
 /** With a sign, for balances and changes: +₹375, −₹100, ₹0. */
 export const formatSigned = (minor) => (minor > 0 ? `+${formatMoney(minor)}` : minor < 0 ? `−${formatMoney(-minor)}` : formatMoney(0))
 
+const compact = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', notation: 'compact', maximumFractionDigits: 1 })
+
+/** Short form for chart axes and labels: ₹1.5K, ₹3.4L, −₹800. Not exact, so never use it where the amount matters. */
+export const formatMoneyCompact = (minor) => (minor < 0 ? `−${compact.format(-minor / 100)}` : compact.format(minor / 100))
+
 /** "1,250.5" -> 125050. Throws INVALID_AMOUNT for anything that is not a plain amount with at most two decimals. */
 export function toMinor(input) {
   const m = String(input).replace(/,/g, '').trim().match(/^(\d+)(?:\.(\d{1,2}))?$/)
