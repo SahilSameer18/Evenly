@@ -1,5 +1,6 @@
 import { lazy } from 'react'
 import { Navigate, Outlet, useLocation } from 'react-router'
+import { Splash } from '../components/Splash.jsx'
 import { useAuth } from './context.js'
 import { peekInvite } from './pendingInvite.js'
 
@@ -10,7 +11,7 @@ const Landing = lazy(() => import('../pages/Landing.jsx'))
 export function RequireAuth() {
   const { status } = useAuth()
   const location = useLocation()
-  if (status === 'loading') return null
+  if (status === 'loading') return <Splash />
   if (status === 'signed-out') {
     return location.pathname === '/' ? <Landing /> : <Navigate to="/login" replace state={{ from: location.pathname }} />
   }
@@ -22,7 +23,7 @@ export function RequireAuth() {
 export function GuestOnly() {
   const { status } = useAuth()
   const location = useLocation()
-  if (status === 'loading') return null
+  if (status === 'loading') return <Splash />
   if (status === 'signed-in') {
     const invite = peekInvite()
     return <Navigate to={invite ? `/invite/${invite}` : (location.state?.from ?? '/')} replace />

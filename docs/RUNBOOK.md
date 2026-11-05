@@ -55,7 +55,7 @@ Render, Logs. Every line is JSON with a request id. When the app shows an error 
 
 ## The free plan sleeps
 
-On Render's free plan the API sleeps after about 15 idle minutes. The next request takes 30 to 60 seconds and the in-memory rate limits reset. Neon also pauses when idle (a short extra delay). The Starter plan removes the sleep. An uptime pinger on `/health` every 10 minutes also keeps it awake; it sends no data, only that one request.
+On Render's free plan the API sleeps after about 15 idle minutes. The next request takes 30 to 60 seconds and the in-memory rate limits reset. Neon also pauses when idle (a short extra delay). The Starter plan removes the sleep. An uptime pinger on `/health` every 10 minutes also keeps it awake; it sends no data, only that one request. To set one up: make a free account on an uptime monitor such as UptimeRobot, add an HTTP monitor for `https://evenly-dz7y.onrender.com/health` with a 10-minute interval, and nothing else. Until then, the app shows a "Waking up the server" screen while the first request waits.
 
 ## Check the proxy count (once, after the first live deploy)
 

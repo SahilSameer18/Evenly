@@ -117,6 +117,11 @@ Desktop is the responsive extension of the phone design: same colours, type and 
 - Every page eases in on navigation; lists stagger their first rows; the add sheet slides up on phones and in from the right on wider screens (closing is instant); steps of the add flow rise in; buttons shrink slightly when pressed; the Overview balance counts up once.
 - The count-up must never leave a wrong number on screen: it is instant for reduced motion and hidden tabs (animation frames do not run there), and a timer guarantees it lands on the real value.
 - `prefers-reduced-motion` removes all motion and delays. Skeletons are static.
+- Waiting for a sleeping server: the `Splash` screen (the "E" mark, then after 1.5 s "Waking up the server" and a bar that fills once over 45 s with `.fill`, never looping, hidden for reduced motion). Skeletons stay static on purpose; there is no shimmer, since a shimmer is a loop.
+
+## Whole-page messages
+
+`StatusPage` is the one layout: wordmark, a big visual, a plain title, one sentence, then the way out. `NotFound` (the `*` route: "404", Back to home, plus Log in when signed out) and `ErrorPage` (the router's error element: Reload and Back to home, the request id when there is one; when a page file cannot load because a new version went live, it says "A new version is ready"). `ErrorPage` is not lazy, since it is what shows when a lazy page fails to load.
 
 ## Fixed top bars
 
