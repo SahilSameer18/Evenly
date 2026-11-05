@@ -113,6 +113,7 @@ Decision record: [ADR 007](ADR/007-settlements-and-balances.md).
 - **The history endpoint returns at most 200 events** and is not paged.
 - **The number of proxies in front of the API is the `TRUST_PROXY` setting** (default 1; 2 when Vercel forwards to Render, which is how the live site is set up). Too low and every user shares one rate-limit bucket; too high and a client could fake its IP. A blank value counts as "not set". The two-network check in [RUNBOOK.md](RUNBOOK.md) confirms the number after deploying.
 - **The live site reaches the API through Vercel's forwarding** (`client/vercel.json`), so the browser sees one site and the refresh cookie stays same-origin. `CLIENT_ORIGIN` must equal the Vercel address exactly, or the CSRF origin check refuses cookie requests.
+- **App pages carry browser security headers** (set in `client/vercel.json` for everything except `/api`, which the API answers itself): a Content-Security-Policy (scripts, fonts, images and connections only from the site itself; no framing; no plugins), `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, a referrer policy and a Permissions-Policy turning camera, microphone and location off. `style-src` keeps `'unsafe-inline'` because the app sets a few inline styles; scripts do not. The page must keep having no inline script (a test checks `index.html`); anything loaded from another site (analytics, a font host) needs the policy widened on purpose.
 - **On Render's free plan the API sleeps when idle**, which resets the in-memory rate limits.
 
 ## Not done yet
