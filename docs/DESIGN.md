@@ -123,6 +123,17 @@ Desktop is the responsive extension of the phone design: same colours, type and 
 
 `StatusPage` is the one layout: wordmark, a big visual, a plain title, one sentence, then the way out. `NotFound` (the `*` route: "404", Back to home, plus Log in when signed out) and `ErrorPage` (the router's error element: Reload and Back to home, the request id when there is one; when a page file cannot load because a new version went live, it says "A new version is ready"). `ErrorPage` is not lazy, since it is what shows when a lazy page fails to load.
 
+## Charts
+
+Hand-drawn SVG and HTML, no chart library (it would add 40 to 90 KB to an 85 KB app and bring its own motion and styling). They live in `components/charts/`; the maths is in `lib/charts.js` (`niceTicks`, `balanceSeries`, `changeText`, `summaryText`).
+
+- **Forms, by the job of the data:** your balance over time is a line (it crosses zero, so above zero it is the accent and below zero the owing colour, with the zero line drawn, so sign never rests on colour alone); paid against share is paired horizontal bars; spending by month is columns in the **emphasis** form (the chosen month in the accent, the rest in neutral grey), where each column is a button that opens that month. The latest balance is read out above the line rather than printed on it, where it would cross the line.
+- **Marks:** columns at most 24 px with a 4 px rounded top and a square base; line 2 px; the end dot is 10 px with a 2 px surface ring; hairline solid grid; labels only for the chosen month and the ends of the line, never one per point; text always in text colours, with identity carried by a mark beside it.
+- **Motion:** columns grow once from the baseline (`.grow`, `scaleY`), horizontal bars once from the left (`.grow-x`), the line and wash fade in, the end dot pops. Nothing draws on with `stroke-dashoffset` (a test only allows opacity and transform), and reduced motion shows the finished picture at once.
+- **Reading it other ways:** every chart has "View as table" with the exact numbers; the line has a hover and touch readout and works with the left and right arrow keys (announced politely); an empty chart says what will make it appear instead of drawing nothing.
+- **Colour check:** run with the dataviz validator for the mark pairs actually used. Accent against neutral grey (the grey is `ink-2` at 70%): dark, lime on the charcoal surface and grey, all at least 3:1, colour-blind separation ΔE 34 (deutan), normal vision 35; light, olive and grey, all at least 3:1, colour-blind separation ΔE 18 (protan), normal vision 21. The validator's lightness-band and chroma-floor lines still report for these two (it is written for sets of hues, and the grey is meant to be neutral and the lime is the app's brighter accent); the checks that decide whether two marks can be told apart all pass. An earlier grey at 50% scored 2.1:1 on the paper surface and was darkened for that reason.
+- **Size:** the report screen is 3.8 KB gzipped; the app entry grew by under 1 KB.
+
 ## Fixed top bars
 
 The landing header and the phone header inside the app are `position: sticky` at the top. They are transparent over the page glow and turn solid with a hairline edge once the page has scrolled, detected with an `IntersectionObserver` on a 1 px marker (no scroll listener). No blur, no shadow. The desktop sidebar is already fixed.
@@ -136,7 +147,7 @@ The landing header and the phone header inside the app are `position: sticky` at
 | Gradients and shadows | One static background glow for the page. No gradients on cards, no box shadows. |
 | Animation | See Motion. No continuous animation anywhere. |
 | Screen | Dark is near-black `#0F0D0C`, not grey, so OLED screens use less power. |
-| JavaScript | Route-based code splitting, lists load on scroll, the React Compiler stays on, no chart library until Part 3. |
+| JavaScript | Route-based code splitting, lists load on scroll, the React Compiler stays on, no chart library (the charts are hand-drawn, see Charts). |
 | Fonts and icons | At most two font files. Icons are inline SVG, never an icon font. |
 
 Budgets, measured before the MVP gate: initial JavaScript under 150 KB gzipped, main thread idle when nothing is happening, Lighthouse performance 90 or more on a mid-range Android profile, and one before-and-after check in Chrome's Performance panel on a real phone.
@@ -168,4 +179,4 @@ One static, lazy-loaded page in the same look: header, hero with a sample balanc
 
 ## Not in v1
 
-Charts and category breakdowns (Part 3), the AI screens, budgets, receipts.
+Category breakdowns (there is no category picker or endpoint yet), the AI screens, budgets, receipts.

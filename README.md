@@ -212,6 +212,7 @@ erDiagram
 | GET | `/households/:householdId/balances` | Each member's net balance and its parts (paid, share, sent, received) |
 | GET | `/households/:householdId/ledger` | Every entry oldest first with each member's running balance |
 | GET | `/households/:householdId/settlement-suggestions` | Who should pay whom to clear everything (advice only) |
+| GET | `/households/:householdId/reports/monthly` | One month of shared spending: total, the month before, each person's paid and share, and six months of trend. `month=YYYY-MM`, in the household's timezone ([ADR 008](docs/ADR/008-monthly-report.md)) |
 
 `GET /health` and `GET /ready` are the liveness and database checks.
 

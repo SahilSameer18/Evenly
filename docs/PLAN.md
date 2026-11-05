@@ -204,6 +204,7 @@ Phase 3.2 Offline behaviour (about 2 days)
 3.2.5 Optional: queue add-expense offline in IndexedDB with an idempotency key, sync on reconnect (skip if time is short; note it in the cut list).
 3.2.6 Test offline in the browser devtools and on a phone in aeroplane mode. Done when: offline never shows a fresh-looking balance, and retrying after a network blip creates no duplicates.
 Phase 3.3 Reports, exports, UPI (about 3 days)
+Status 2026-11-05: 3.3.1 and 3.3.2 done, with the charts built in (Overview insights, the Monthly report screen, hand-drawn SVG; top categories left out because there is no category picker yet; see ADR 008). 3.3.3 to 3.3.6 open (the timezone test in 3.3.6 is done).
 3.3.1 Monthly report endpoint: totals, paid vs share per member, net balance, top categories, change from last month (household timezone boundaries).
 3.3.2 Monthly report screen with a shareable text summary (WhatsApp-friendly).
 3.3.3 CSV export of expenses and settlements (with a signed or authenticated download).
