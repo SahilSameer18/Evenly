@@ -12,6 +12,8 @@ import {
   updateHouseholdBody,
 } from "./household.validation.js";
 import * as balanceController from "../balances/balance.controller.js";
+import * as reportController from "../reports/report.controller.js";
+import { monthlyQuery } from "../reports/report.validation.js";
 import expenseRoutes from "../expenses/expense.routes.js";
 import settlementRoutes from "../settlements/settlement.routes.js";
 import * as controller from "./household.controller.js";
@@ -37,6 +39,7 @@ const member = [validate({ params: householdParams }), householdMembership];
 router.get("/:householdId/balances", member, balanceController.balances);
 router.get("/:householdId/ledger", member, balanceController.ledger);
 router.get("/:householdId/settlement-suggestions", member, balanceController.suggestions);
+router.get("/:householdId/reports/monthly", validate({ params: householdParams, query: monthlyQuery }), householdMembership, reportController.monthly);
 
 export default router;
 
